@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Colours sampled from the Figma screens. */
+@theme inline {
+  --color-accent: #f59e0b;
+  --color-accent-soft: #fef3dc;
+  --color-on-accent: #1f1503;
+  --color-sidebar: #f4f3ee;
+  --color-chip: #e5e5ea;
+  --color-line: #e5e5ea;
+  --color-muted: #6e6e73;
+  --color-ink: #111111;
+  --font-sans: var(--ff-inter);
+  --font-serif: var(--ff-pt-serif);
+  --font-lora: var(--ff-lora);
+}
+
+/* Reader themes. Only Paper Light is confirmed from a Figma screenshot; check the other
+   three against the DARK, DARKGREEN and WARM-BROWN frames. */
+[data-theme="paper"] {
+  --r-bg: #fcfbf7;
+  --r-fg: #1a1a18;
+  --r-muted: #6e6e73;
+  --r-line: #e5e5ea;
+  --r-surface: #ffffff;
+}
+[data-theme="night"] {
+  --r-bg: #15161a;
+  --r-fg: #e6e4de;
+  --r-muted: #9c9ca3;
+  --r-line: #33363e;
+  --r-surface: #22242a;
+}
+[data-theme="forest"] {
+  --r-bg: #1e2b24;
+  --r-fg: #dfe8dd;
+  --r-muted: #a3b4a7;
+  --r-line: #3a4e43;
+  --r-surface: #293a31;
+}
+[data-theme="sepia"] {
+  --r-bg: #3a2a1d;
+  --r-fg: #f0e2cc;
+  --r-muted: #c9b59a;
+  --r-line: #5f4935;
+  --r-surface: #4a3727;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--ff-inter), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reader {
+  background: var(--r-bg);
+  color: var(--r-fg);
+}
+
+/* touch-action removes the phone browser's tap delay, which keeps a tap under 100 ms. */
+.word {
+  cursor: pointer;
+  border-radius: 3px;
+  touch-action: manipulation;
+}
+@media (hover: hover) {
+  .word:hover {
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+}
+.word-saved {
+  border-bottom: 2px dotted var(--color-accent);
+}
+.word-selected,
+.word-selected:hover {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
