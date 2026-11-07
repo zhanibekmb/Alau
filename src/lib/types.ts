@@ -14,7 +14,8 @@ export type License = {
   };
 };
 
-export type Cover = { sky: string; sun: string; hills: [string, string] };
+/** Colors draw the default cover. `image` is a path in /public and replaces the drawing. */
+export type Cover = { sky: string; sun: string; hills: [string, string]; image?: string };
 
 export type SourceBook = {
   slug: string;
@@ -27,7 +28,8 @@ export type SourceBook = {
   description: { kk: string; en: string };
   keyWords: string[];
   license: License;
-  chapters: { title: string; paragraphs: string[] }[];
+  /** `original` is the chapter in the language the book was written in (Kazakh), shown on request. */
+  chapters: { title: string; paragraphs: string[]; original?: string[] }[];
 };
 
 export type Gloss = { id: string; lemma: string; kk: string; ipa: string; pos: string };
@@ -46,6 +48,7 @@ export type ChapterFile = {
   title: string;
   pages: Page[];
   glosses: Record<string, Gloss>;
+  original?: string[];
 };
 
 export type ChapterOutline = { n: number; title: string; firstPage: number; lastPage: number };

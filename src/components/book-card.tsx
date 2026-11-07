@@ -1,7 +1,20 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { BookInfo, Cover } from "@/lib/types";
 
 export function BookCover({ cover, className = "" }: { cover: Cover; className?: string }) {
+  if (cover.image) {
+    return (
+      <Image
+        src={cover.image}
+        alt=""
+        width={848}
+        height={1264}
+        sizes="(max-width: 640px) 50vw, 240px"
+        className={`object-cover ${className}`}
+      />
+    );
+  }
   return (
     <svg viewBox="0 0 150 200" preserveAspectRatio="xMidYMid slice" className={className} aria-hidden="true">
       <rect width="150" height="200" fill={cover.sky} />

@@ -1,4 +1,6 @@
 import type { SourceBook } from "../lib/types";
+import { BAKALY_BOOKS } from "./bakaly";
+import { INSTITUTE_BOOKS } from "./institute";
 
 // Demo stories written for this project. They have no third-party rights holder,
 // and their Kazakh glosses still need a native speaker's review before real readers see them.
@@ -155,4 +157,6 @@ export const SOURCE_BOOKS: SourceBook[] = [
       },
     ],
   },
+  ...BAKALY_BOOKS,
+  ...INSTITUTE_BOOKS,
 ];

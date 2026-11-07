@@ -79,6 +79,32 @@ export function ChapterMenu({ book, currentChapter, onPick, onClose }: {
   );
 }
 
+export function OriginalPanel({ chapter, title, paragraphs, onClose }: {
+  chapter: number;
+  title: string;
+  paragraphs: string[];
+  onClose: () => void;
+}) {
+  return (
+    <Overlay label="Қазақша нұсқа" onClose={onClose} position="items-start pt-20">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-[var(--r-muted)]">Қазақша нұсқа · {chapter}-тарау</p>
+          <h2 className="text-xl font-bold">{title}</h2>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Жабу" className="-m-1 p-1">
+          <CloseIcon className="size-6" />
+        </button>
+      </div>
+      <div lang="kk" className="mt-4 space-y-3 leading-relaxed">
+        {paragraphs.map((text, i) => (
+          <p key={i}>{text}</p>
+        ))}
+      </div>
+    </Overlay>
+  );
+}
+
 const FONTS: { id: ReaderFont; label: string; family: string }[] = [
   { id: "serif", label: "Serif", family: "var(--ff-pt-serif)" },
   { id: "sans", label: "Sans", family: "var(--ff-inter)" },

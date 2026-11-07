@@ -56,7 +56,8 @@ function parseGloss(key: string, lexicon: Record<string, string>): Gloss {
 }
 
 const MARKUP = /\{([^|}]+)\|([^}]+)\}/g;
-const WORD = /[A-Za-z]+(?:['’-][A-Za-z]+)*/g;
+// Latin letters with accents count as letters, so "fouetté" stays one word.
+const WORD = /[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ]+)*/g;
 
 type Context = {
   dictionary: Dictionary;
@@ -183,6 +184,7 @@ export function buildEdition(source: SourceBook, dictionary: Dictionary): Editio
       title: chapter.title,
       pages,
       glosses: ctx.glosses,
+      ...(chapter.original ? { original: chapter.original } : {}),
     });
   });
 

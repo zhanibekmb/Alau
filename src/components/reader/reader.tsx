@@ -14,7 +14,7 @@ import { recordProgress, saveWord, updateSettings, useAppState, useHydrated } fr
 import type { BookInfo, ChapterFile, Gloss, Page } from "@/lib/types";
 import { Mascot } from "../brand";
 import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, MenuIcon, WordsIcon } from "../icons";
-import { ChapterMenu, SettingsPanel } from "./panels";
+import { ChapterMenu, OriginalPanel, SettingsPanel } from "./panels";
 import { WordPopover, placePopover, type PopoverPlace } from "./word-popover";
 
 const FONT_FAMILY = { serif: "var(--ff-pt-serif)", sans: "var(--ff-inter)", lora: "var(--ff-lora)" };
@@ -113,7 +113,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
 
   const [chosenPage, setChosenPage] = useState<number | null>(startPage ?? null);
   const [showFinish, setShowFinish] = useState(false);
-  const [panel, setPanel] = useState<"chapters" | "settings" | null>(null);
+  const [panel, setPanel] = useState<"chapters" | "settings" | "original" | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
 
   const resumePage = stored && !stored.finished ? stored.page : 1;
@@ -224,6 +224,17 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
             <span className="max-md:hidden">Сөздікке:</span>
             <span className="text-accent">{bookWordCount}<span className="max-md:hidden"> сөз</span></span>
           </Link>
+          {file?.original && (
+            <button
+              type="button"
+              onClick={() => setPanel("original")}
+              aria-label="Қазақша нұсқа"
+              className="flex h-10 shrink-0 items-center rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 text-sm font-medium"
+            >
+              <span className="md:hidden">ҚАЗ</span>
+              <span className="max-md:hidden">Қазақша нұсқа</span>
+            </button>
+          )}
           <button type="button" onClick={() => setPanel("settings")} aria-label="Оқу баптаулары" className={`${circleButton} font-medium`}>
             Aa
           </button>
@@ -351,6 +362,14 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         />
       )}
       {panel === "settings" && <SettingsPanel settings={settings} onClose={() => setPanel(null)} />}
+      {panel === "original" && file?.original && (
+        <OriginalPanel
+          chapter={file.chapter}
+          title={file.title}
+          paragraphs={file.original}
+          onClose={() => setPanel(null)}
+        />
+      )}
     </div>
   );
 }

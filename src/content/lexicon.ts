@@ -2,7 +2,12 @@
 // Part-of-speech codes are explained in POS_LABELS in src/lib/types.ts.
 // The Kazakh here is a draft and needs a native speaker's review before publication.
 
+import { BAKALY_IRREGULAR, BAKALY_LEXICON } from "./lexicon-bakaly";
+import { INSTITUTE_IRREGULAR, INSTITUTE_LEXICON } from "./lexicon-institute";
+
 export const LEXICON: Record<string, string> = {
+  ...BAKALY_LEXICON,
+  ...INSTITUTE_LEXICON,
   // People and places
   dana: "Дана (есім)|ˈdɑːnə|name",
   aisha: "Айша (есім)|ˈaɪʃə|name",
@@ -409,6 +414,8 @@ export const LEXICON: Record<string, string> = {
 
 // Irregular English forms -> lemma. Regular endings are handled by the lemmatizer.
 export const IRREGULAR_FORMS: Record<string, string> = {
+  ...BAKALY_IRREGULAR,
+  ...INSTITUTE_IRREGULAR,
   is: "be", are: "be", am: "be", was: "be", were: "be", been: "be",
   has: "have", had: "have",
   does: "do", did: "do",
