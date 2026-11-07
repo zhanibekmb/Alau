@@ -19,7 +19,8 @@ import { WordPopover, placePopover, type PopoverPlace } from "./word-popover";
 
 const FONT_FAMILY = { serif: "var(--ff-pt-serif)", sans: "var(--ff-inter)", lora: "var(--ff-lora)" };
 
-type Loaded = { key: string; status: "ready" | "error" | "gone"; file?: ChapterFile };
+/** login and paywall: the server refused a paid chapter (401 guest, 402 no purchase). */
+type Loaded = { key: string; status: "ready" | "error" | "gone" | "login" | "paywall"; file?: ChapterFile };
 
 function useChapter(slug: string, chapter: number | null) {
   const [attempt, setAttempt] = useState(0);
@@ -34,6 +35,10 @@ function useChapter(slug: string, chapter: number | null) {
       .then(async (response) => {
         if (response.status === 410 || response.status === 404) {
           setLoaded({ key, status: "gone" });
+        } else if (response.status === 401) {
+          setLoaded({ key, status: "login" });
+        } else if (response.status === 402) {
+          setLoaded({ key, status: "paywall" });
         } else if (response.ok) {
           setLoaded({ key, status: "ready", file: (await response.json()) as ChapterFile });
         } else {
@@ -257,6 +262,8 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
               goTo(1);
             }}
           />
+        ) : status === "login" || status === "paywall" ? (
+          <LockedChapter book={book} needsLogin={status === "login"} />
         ) : status === "gone" ? (
           <Unavailable />
         ) : status === "error" ? (
@@ -369,6 +376,29 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           paragraphs={file.original}
           onClose={() => setPanel(null)}
         />
+      )}
+    </div>
+  );
+}
+
+/** Placeholder until the full paywall (T6): explains why the chapter is closed. */
+function LockedChapter({ book, needsLogin }: { book: BookInfo; needsLogin: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center" role="alert">
+      <Mascot className="size-24" />
+      <p className="text-xl font-semibold">Бұл тарау ақылы</p>
+      <p className="text-[var(--r-muted)]">
+        {needsLogin
+          ? "Оқуды жалғастыру үшін аккаунтқа кіріңіз."
+          : `Тегін бөлім осы жерде аяқталды. Кітаптың бағасы: ${book.paywall?.priceTenge ?? ""} ₸.`}
+      </p>
+      {needsLogin && (
+        <Link
+          href={`/login?mode=sign-up&next=${encodeURIComponent(`/read/${book.slug}`)}`}
+          className="mt-2 rounded-xl bg-accent px-5 py-3 font-medium text-on-accent"
+        >
+          Кіру немесе тіркелу
+        </Link>
       )}
     </div>
   );

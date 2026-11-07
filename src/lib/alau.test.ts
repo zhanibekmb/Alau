@@ -113,25 +113,29 @@ describe("licenses", () => {
 
 describe("serving a chapter", () => {
   const edition = buildEdition(SOURCE_BOOKS[0], dictionary);
+  /** Demo books are free, so the reader must never be looked up. */
+  const noLookup = async () => {
+    throw new Error("a free chapter must not look up the reader");
+  };
 
-  it("returns the chapter with an ETag, then 304 when nothing changed", () => {
-    const first = serveChapter(edition, 1, null, NOW);
+  it("returns the chapter with an ETag, then 304 when nothing changed", async () => {
+    const first = await serveChapter(edition, 1, null, NOW, noLookup);
     expect(first.status).toBe(200);
     if (first.status !== 200) return;
     expect(JSON.parse(first.body).chapter).toBe(1);
-    expect(serveChapter(edition, 1, first.etag, NOW).status).toBe(304);
+    expect((await serveChapter(edition, 1, first.etag, NOW, noLookup)).status).toBe(304);
   });
 
-  it("returns 410 once the license is revoked, even with a cached copy", () => {
-    const first = serveChapter(edition, 1, null, NOW);
+  it("returns 410 once the license is revoked, even with a cached copy", async () => {
+    const first = await serveChapter(edition, 1, null, NOW, noLookup);
     if (first.status !== 200) throw new Error("expected 200");
     const revoked = { ...edition, source: { ...edition.source, license: license({ status: "revoked" }) } };
-    expect(serveChapter(revoked, 1, first.etag, NOW).status).toBe(410);
+    expect((await serveChapter(revoked, 1, first.etag, NOW, noLookup)).status).toBe(410);
   });
 
-  it("returns 404 for an unknown book or chapter", () => {
-    expect(serveChapter(undefined, 1, null, NOW).status).toBe(404);
-    expect(serveChapter(edition, 99, null, NOW).status).toBe(404);
+  it("returns 404 for an unknown book or chapter", async () => {
+    expect((await serveChapter(undefined, 1, null, NOW, noLookup)).status).toBe(404);
+    expect((await serveChapter(edition, 99, null, NOW, noLookup)).status).toBe(404);
   });
 
   it("limits request rate per client and resets after the window", () => {
