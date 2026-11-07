@@ -274,9 +274,10 @@ E2E (Playwright, десктоп и 360 px): гость читает до кул�
   - Файлы: `src/db/auth-schema.ts`, `src/db/schema.ts`, `src/db/index.ts`, `src/db/test-db.ts`, `src/db/test-global-setup.ts`, `src/db/schema.db.test.ts`, `drizzle.config.ts`, `drizzle/0000_init.sql`, `vitest.config.mts`, `vitest.db.config.mts`, `.env.example`, `package.json`.
   - Попутно: vitest 3 → 5 и `@types/node` 20 → 24 (иначе better-auth не ставился из-за Vite 7); база сама запрещает покупку книги без `work` и Premium без срока.
   - Проверка: `npm run db:migrate` создал таблицы в `alau`; `npm test` (32) проходит без базы; `npm run test:db` (6) проходит на `alau_test`.
-- [ ] **T2 (P1, human: ~1 день / CC: ~30 мин)** — вход — Better Auth (email + пароль), `/login`, лимит попыток, `src/lib/dal.ts` с `server-only`.
-  - Файлы: `src/lib/auth.ts`, `src/lib/dal.ts`, `src/app/api/auth/[...all]/route.ts`, `src/app/(site)/login/page.tsx`.
-  - Проверка: регистрация, вход, выход; неверный пароль даёт общее сообщение; 6-я попытка → 429.
+- [x] **T2 (P1, human: ~1 день / CC: ~30 мин)** — вход — Better Auth (email + пароль), `/login`, лимит попыток, `src/lib/dal.ts` с `server-only`. Сделано 2026-11-08.
+  - Файлы: `src/lib/auth.ts`, `src/lib/dal.ts`, `src/lib/auth-client.ts`, `src/lib/auth-messages.ts`, `src/app/api/auth/[...all]/route.ts`, `src/app/(site)/login/page.tsx`, `src/components/login-form.tsx`, `src/components/account.tsx` (блок аккаунта в боковой панели и профиле).
+  - Тесты: `auth-messages.test.ts` (тексты ошибок, защита `?next=` от чужих сайтов), `auth.db.test.ts` (хэш пароля, повторный email, короткий пароль, одинаковый ответ на неверный пароль и чужой email, 429 после 5 попыток в минуту, выход).
+  - Проверено в браузере: регистрация → возврат по `?next=`, вошедшего `/login` отправляет дальше, выход, неверный пароль, вход.
 - [ ] **T3 (P1, human: ~3 ч / CC: ~15 мин)** — контент — поля `work`, `freeChapters`, `price`; `paidAccess: true`; `freeChapters` и `paidAccess` в `BookInfo` (E1A).
   - Файлы: `src/lib/types.ts`, `src/lib/publish.ts`, `src/content/bakaly.ts`, `src/content/institute.ts`.
   - Проверка: `npm test`, включая «граница в BookInfo = граница на сервере».

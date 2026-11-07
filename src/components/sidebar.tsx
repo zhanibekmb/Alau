@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AccountBadge } from "./account";
 import { Logo } from "./brand";
 import { BookOpenIcon, HomeIcon, UserIcon, WordsIcon } from "./icons";
 
@@ -43,14 +44,8 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className="mt-auto flex items-center gap-3 border-t border-line pt-4">
-          <span className="flex size-10 items-center justify-center rounded-full bg-accent font-semibold text-on-accent">
-            Қ
-          </span>
-          <span>
-            <span className="block font-semibold">Қонақ</span>
-            <span className="block text-xs text-muted">Деректер осы браузерде</span>
-          </span>
+        <div className="mt-auto border-t border-line pt-3">
+          <AccountBadge />
         </div>
       </aside>
 

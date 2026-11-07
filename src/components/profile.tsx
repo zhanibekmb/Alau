@@ -2,6 +2,7 @@
 
 import { clearAllData, updateSettings, useAppState } from "@/lib/store";
 import { LEVELS } from "@/lib/types";
+import { AccountCard } from "./account";
 
 export function Profile() {
   const { progress, words, settings } = useAppState();
@@ -16,15 +17,7 @@ export function Profile() {
     <div className="mx-auto w-full max-w-[680px] px-4 pb-10 pt-6 md:px-8 md:pt-14">
       <h1 className="text-3xl font-bold md:text-4xl">Профиль</h1>
 
-      <section className="mt-6 flex items-center gap-4 rounded-3xl bg-sidebar p-5">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-accent text-2xl font-semibold text-on-accent">
-          Қ
-        </span>
-        <div>
-          <p className="text-xl font-bold">Қонақ</p>
-          <p className="text-sm text-muted">Прогресс пен сөздік осы браузерде сақталады.</p>
-        </div>
-      </section>
+      <AccountCard />
 
       <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
         {stats.map(({ value, label }) => (
