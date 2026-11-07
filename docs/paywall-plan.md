@@ -286,8 +286,10 @@ E2E (Playwright, десктоп и 360 px): гость читает до кул�
   - Файлы: `src/lib/access.ts` (чистое правило), `src/lib/plans.ts` (Premium: 1 490 ₸ / 30 дней, 11 900 ₸ / 365 дней), `src/lib/entitlements.ts`, `src/lib/serve.ts` (асинхронный, база только для платных глав, 401/402/503), route главы, `src/components/reader/reader.tsx` (временный экран «Бұл тарау ақылы» до T6).
   - Тесты: `access.test.ts` (все ветви, граница конца Premium, ETag без доступа → 401/402, Premium истёк после кэша → 402, база упала → 503, бесплатная глава без обращения к базе), `plans.test.ts`, `entitlements.db.test.ts`.
   - Проверено на живом сайте: гость 200/401, читатель без покупки 402, покупка «Бақалы» открывает B1 и A2, но не Институт; после выхода старый ETag → 401.
-- [ ] **T5 (P1, human: ~3 ч / CC: ~15 мин)** — выбор тарифа — `POST /api/paywall/choice`, режимы demo и interest, события с `anon_id`.
-  - Проверка: двойной запрос даёт одну запись; без переменной доступ не открывается; неизвестный тариф → 400.
+- [x] **T5 (P1, human: ~3 ч / CC: ~15 мин)** — выбор тарифа — `POST /api/paywall/choice`, режимы demo и interest, события с `anon_id`. Сделано 2026-11-08.
+  - Файлы: `src/lib/payments-mode.ts` (только точное `demo` открывает доступ, иначе interest + предупреждение в логе), `src/lib/paywall-request.ts` (проверка запроса; цена из запроса игнорируется), `src/lib/paywall.ts` (`choosePlan` с блокировкой на читателя в транзакции, `recordPaywallShown`), `src/lib/catalog.ts` (`findPaidWork`), `src/app/api/paywall/choice/route.ts`, `src/app/api/paywall/seen/route.ts` (гость считается по `anon_id`), `.env.example`.
+  - Тесты: `paywall-request.test.ts`, `paywall.db.test.ts` (interest ничего не выдаёт; demo: книга навсегда, Premium ровно 30 дней, повтор и три одновременных нажатия → одна запись, второй Premium не накладывается на активный).
+  - Проверено на живом сайте в обоих режимах; тестовые данные удалены.
 - [ ] **T6 (P1, human: ~1 день / CC: ~40 мин)** — интерфейс — пэйволл в читалке, замки в меню глав, тариф в профиле, 360 px.
   - Файлы: `src/components/reader/*`, `src/components/paywall.tsx`, `src/components/profile.tsx`.
 - [ ] **T6b (P1, human: ~3 ч / CC: ~20 мин)** — E2E — Playwright, два теста (E3B).
