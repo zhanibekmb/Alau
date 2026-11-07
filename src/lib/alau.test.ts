@@ -19,6 +19,7 @@ const license = (change: Partial<License> = {}): License => ({
 
 const book = (paragraphs: string[], change: Partial<SourceBook> = {}): SourceBook => ({
   slug: "test",
+  work: "test",
   title: "Test",
   author: "Test",
   level: "A1",

@@ -17,8 +17,18 @@ export type License = {
 /** Colors draw the default cover. `image` is a path in /public and replaces the drawing. */
 export type Cover = { sky: string; sun: string; hills: [string, string]; image?: string };
 
+/**
+ * Where the free part ends and what the whole work costs (docs/paywall-plan.md, D5 and D9).
+ * Chapters 1..freeChapters are free on every level; the price buys all levels of the work.
+ */
+export type PaywallConfig = { freeChapters: number; priceTenge: number };
+
 export type SourceBook = {
   slug: string;
+  /** One story told at several levels shares one work id. A purchase unlocks the whole work. */
+  work: string;
+  /** No paywall means the whole book is free. */
+  paywall?: PaywallConfig;
   title: string;
   author: string;
   level: Level;
@@ -56,6 +66,12 @@ export type ChapterOutline = { n: number; title: string; firstPage: number; last
 /** Everything the UI needs about a book, without its text. */
 export type BookInfo = {
   slug: string;
+  work: string;
+  /**
+   * Null when every chapter is free: no paywall configured, or the license does not allow paid access.
+   * The server decides access with the same rule (bookPaywall in src/lib/publish.ts).
+   */
+  paywall: PaywallConfig | null;
   title: string;
   author: string;
   level: Level;

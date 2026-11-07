@@ -278,9 +278,10 @@ E2E (Playwright, десктоп и 360 px): гость читает до кул�
   - Файлы: `src/lib/auth.ts`, `src/lib/dal.ts`, `src/lib/auth-client.ts`, `src/lib/auth-messages.ts`, `src/app/api/auth/[...all]/route.ts`, `src/app/(site)/login/page.tsx`, `src/components/login-form.tsx`, `src/components/account.tsx` (блок аккаунта в боковой панели и профиле).
   - Тесты: `auth-messages.test.ts` (тексты ошибок, защита `?next=` от чужих сайтов), `auth.db.test.ts` (хэш пароля, повторный email, короткий пароль, одинаковый ответ на неверный пароль и чужой email, 429 после 5 попыток в минуту, выход).
   - Проверено в браузере: регистрация → возврат по `?next=`, вошедшего `/login` отправляет дальше, выход, неверный пароль, вход.
-- [ ] **T3 (P1, human: ~3 ч / CC: ~15 мин)** — контент — поля `work`, `freeChapters`, `price`; `paidAccess: true`; `freeChapters` и `paidAccess` в `BookInfo` (E1A).
-  - Файлы: `src/lib/types.ts`, `src/lib/publish.ts`, `src/content/bakaly.ts`, `src/content/institute.ts`.
-  - Проверка: `npm test`, включая «граница в BookInfo = граница на сервере».
+- [x] **T3 (P1, human: ~3 ч / CC: ~15 мин)** — контент — `work` и `paywall` (`freeChapters`, `priceTenge`) у книг; `paidAccess: true`; `BookInfo.paywall` (E1A). Сделано 2026-11-08.
+  - Файлы: `src/lib/types.ts`, `src/lib/publish.ts` (`bookPaywall` — одно правило для интерфейса и сервера, проверка настроек при сборке), `src/content/books.ts`, `src/content/bakaly.ts`, `src/content/institute.ts`, `src/lib/paywall-config.test.ts`.
+  - Демо-книги без `paywall`: бесплатны целиком. Цена хранится у книги, а не в `plans.ts`.
+  - Проверка: `npm test` (65), включая «граница в BookInfo = граница на сервере» и «последняя бесплатная глава — сон про гладиатора».
 - [ ] **T4 (P1, human: ~4 ч / CC: ~20 мин)** — доступ — `canReadChapter`, тарифы, проверка до 304.
   - Файлы: `src/lib/access.ts`, `src/lib/plans.ts`, `src/lib/serve.ts`, route главы.
   - Проверка: юнит-тесты всех ветвей `canReadChapter`; db-тест «старый ETag без доступа → 402».

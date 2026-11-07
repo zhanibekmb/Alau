@@ -10,7 +10,7 @@ const LICENSE: SourceBook["license"] = {
   holder: "Ites Shynbatyr",
   status: "active",
   validUntil: null,
-  allows: { translation: true, adaptation: true, aiProcessing: false, paidAccess: false },
+  allows: { translation: true, adaptation: true, aiProcessing: false, paidAccess: true },
 };
 
 const COVER: SourceBook["cover"] = {
@@ -23,6 +23,8 @@ const COVER: SourceBook["cover"] = {
 export const INSTITUTE_BOOKS: SourceBook[] = [
   {
     slug: "institute-of-artificial-consciousness-a1",
+    work: "institute-of-artificial-consciousness",
+    paywall: { freeChapters: 17, priceTenge: 690 },
     title: "The Institute of Advanced Research and Experimental Artificial Consciousness",
     author: "Ites Shynbatyr",
     level: "A1",
@@ -629,6 +631,8 @@ export const INSTITUTE_BOOKS: SourceBook[] = [
   },
   {
     slug: "institute-of-artificial-consciousness-a2",
+    work: "institute-of-artificial-consciousness",
+    paywall: { freeChapters: 12, priceTenge: 690 },
     title: "The Institute of Advanced Research and Experimental Artificial Consciousness",
     author: "Ites Shynbatyr",
     level: "A2",
@@ -883,6 +887,8 @@ export const INSTITUTE_BOOKS: SourceBook[] = [
   },
   {
     slug: "institute-of-artificial-consciousness-b1",
+    work: "institute-of-artificial-consciousness",
+    paywall: { freeChapters: 9, priceTenge: 690 },
     title: "The Institute of Advanced Research and Experimental Artificial Consciousness",
     author: "Ites Shynbatyr",
     level: "B1",
@@ -1239,6 +1245,8 @@ export const INSTITUTE_BOOKS: SourceBook[] = [
   },
   {
     slug: "institute-of-artificial-consciousness-b2",
+    work: "institute-of-artificial-consciousness",
+    paywall: { freeChapters: 7, priceTenge: 690 },
     title: "The Institute of Advanced Research and Experimental Artificial Consciousness",
     author: "Ites Shynbatyr",
     level: "B2",

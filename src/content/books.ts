@@ -18,6 +18,7 @@ const DEMO_LICENSE: SourceBook["license"] = {
 export const SOURCE_BOOKS: SourceBook[] = [
   {
     slug: "the-little-foal",
+    work: "the-little-foal",
     title: "The Little Foal",
     author: "Alau демо",
     level: "A1",
@@ -51,6 +52,7 @@ export const SOURCE_BOOKS: SourceBook[] = [
   },
   {
     slug: "the-eagle-girl",
+    work: "the-eagle-girl",
     title: "The Eagle Girl",
     author: "Alau демо",
     level: "A2",
@@ -94,6 +96,7 @@ export const SOURCE_BOOKS: SourceBook[] = [
   },
   {
     slug: "the-silent-dombra",
+    work: "the-silent-dombra",
     title: "The Silent Dombra",
     author: "Alau демо",
     level: "B1",
@@ -127,6 +130,7 @@ export const SOURCE_BOOKS: SourceBook[] = [
   },
   {
     slug: "the-salt-road",
+    work: "the-salt-road",
     title: "The Salt Road",
     author: "Alau демо",
     level: "B2",

@@ -9,7 +9,7 @@ const LICENSE: SourceBook["license"] = {
   holder: "Ites Shynbatyr",
   status: "active",
   validUntil: null,
-  allows: { translation: true, adaptation: true, aiProcessing: false, paidAccess: false },
+  allows: { translation: true, adaptation: true, aiProcessing: false, paidAccess: true },
 };
 
 const COVER: SourceBook["cover"] = {
@@ -22,6 +22,8 @@ const COVER: SourceBook["cover"] = {
 export const BAKALY_BOOKS: SourceBook[] = [
   {
     slug: "secret-of-lake-bakaly-a1",
+    work: "secret-of-lake-bakaly",
+    paywall: { freeChapters: 6, priceTenge: 490 },
     title: "The Secret of Lake Bakaly",
     author: "Ites Shynbatyr",
     level: "A1",
@@ -164,6 +166,8 @@ export const BAKALY_BOOKS: SourceBook[] = [
   },
   {
     slug: "secret-of-lake-bakaly-a2",
+    work: "secret-of-lake-bakaly",
+    paywall: { freeChapters: 6, priceTenge: 490 },
     title: "The Secret of Lake Bakaly",
     author: "Ites Shynbatyr",
     level: "A2",
@@ -308,6 +312,8 @@ export const BAKALY_BOOKS: SourceBook[] = [
   },
   {
     slug: "secret-of-lake-bakaly-b1",
+    work: "secret-of-lake-bakaly",
+    paywall: { freeChapters: 6, priceTenge: 490 },
     title: "The Secret of Lake Bakaly",
     author: "Ites Shynbatyr",
     level: "B1",
@@ -551,6 +557,8 @@ export const BAKALY_BOOKS: SourceBook[] = [
   },
   {
     slug: "secret-of-lake-bakaly-b2",
+    work: "secret-of-lake-bakaly",
+    paywall: { freeChapters: 6, priceTenge: 490 },
     title: "The Secret of Lake Bakaly",
     author: "Ites Shynbatyr",
     level: "B2",

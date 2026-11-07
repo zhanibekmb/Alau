@@ -4,6 +4,7 @@ import type {
   Gloss,
   Page,
   Paragraph,
+  PaywallConfig,
   Sentence,
   SourceBook,
   Token,
@@ -157,8 +158,35 @@ export function paginate(paragraphs: Paragraph[], firstPage: number, perPage = W
 
 export type Edition = { info: BookInfo; source: SourceBook; chapters: ChapterFile[] };
 
+export class InvalidPaywallError extends Error {}
+
+/**
+ * The paywall that applies to a book, or null when every chapter is free.
+ * The reader UI (BookInfo.paywall) and the server's access check both use this, so they always agree.
+ */
+export function bookPaywall(source: SourceBook): PaywallConfig | null {
+  if (!source.paywall || !source.license.allows.paidAccess) return null;
+  return source.paywall;
+}
+
+function checkPaywall(source: SourceBook): void {
+  const { paywall, chapters, slug } = source;
+  if (!source.work.trim()) throw new InvalidPaywallError(`${slug}: work is empty`);
+  if (!paywall) return;
+  const { freeChapters, priceTenge } = paywall;
+  if (!Number.isInteger(freeChapters) || freeChapters < 1 || freeChapters >= chapters.length) {
+    throw new InvalidPaywallError(
+      `${slug}: freeChapters must leave at least one free and one paid chapter (1..${chapters.length - 1}), got ${freeChapters}`,
+    );
+  }
+  if (!Number.isInteger(priceTenge) || priceTenge <= 0) {
+    throw new InvalidPaywallError(`${slug}: priceTenge must be a positive whole number, got ${priceTenge}`);
+  }
+}
+
 /** Builds the chapter files. Throws if any meaningful word has no translation. */
 export function buildEdition(source: SourceBook, dictionary: Dictionary): Edition {
+  checkPaywall(source);
   const missing = new Set<string>();
   const chapters: ChapterFile[] = [];
   let nextPage = 1;
@@ -195,6 +223,8 @@ export function buildEdition(source: SourceBook, dictionary: Dictionary): Editio
 
   const info: BookInfo = {
     slug: source.slug,
+    work: source.work,
+    paywall: bookPaywall(source),
     title: source.title,
     author: source.author,
     level: source.level,
