@@ -14,7 +14,7 @@ let ipCounter = 0;
 
 beforeAll(() => {
   db = createTestDb();
-  auth = createAuth(db, { secret: "test-secret-that-is-long-enough-0123456789", baseURL: ORIGIN });
+  auth = createAuth(db, { secret: "test-secret-that-is-long-enough-0123456789", baseURL: ORIGIN, requireEmailVerification: false });
 });
 beforeEach(async () => {
   await resetDb(db);
@@ -135,6 +135,7 @@ describe("password reset", () => {
     createAuth(db, {
       secret: "test-secret-that-is-long-enough-0123456789",
       baseURL: ORIGIN,
+      requireEmailVerification: false,
       sendResetEmail: async (data) => {
         sent.push(data);
       },
@@ -173,5 +174,43 @@ describe("password reset", () => {
     const response = await call(resetAuth(), "/request-password-reset", { email: "nobody@example.kz", redirectTo: "/reset-password" });
     expect(response.status).toBe(200);
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe("email confirmation", () => {
+  it("lets a new reader in only after the link from the email, and sends a new link on a sign-in attempt", async () => {
+    const links: string[] = [];
+    const instance = createAuth(db, {
+      secret: "test-secret-that-is-long-enough-0123456789",
+      baseURL: ORIGIN,
+      sendVerificationEmail: async ({ url }) => {
+        links.push(url);
+      },
+    });
+    const call = (path: string, body: object) =>
+      instance.handler(
+        new Request(`${ORIGIN}/api/auth${path}`, {
+          method: "POST",
+          headers: { "content-type": "application/json", origin: ORIGIN, "x-forwarded-for": freshIp() },
+          body: JSON.stringify(body),
+        }),
+      );
+
+    const signedUp = await call("/sign-up/email", { email: "confirm@example.kz", password: "long-password-1", name: "c", callbackURL: "/library" });
+    expect(signedUp.status).toBe(200);
+    expect(signedUp.headers.get("set-cookie") ?? "").not.toContain("session_token=");
+    expect(links).toHaveLength(1);
+
+    const early = await call("/sign-in/email", { email: "confirm@example.kz", password: "long-password-1" });
+    expect(early.status).toBe(403);
+    expect((await early.json()).code).toBe("EMAIL_NOT_VERIFIED");
+    expect(links).toHaveLength(2);
+
+    const verified = await instance.handler(new Request(links[1], { headers: { "x-forwarded-for": freshIp() }, redirect: "manual" }));
+    expect([200, 302]).toContain(verified.status);
+    expect(verified.headers.get("set-cookie") ?? "").toContain("session_token=");
+    const [row] = await db.select().from(user).where(eq(user.email, "confirm@example.kz"));
+    expect(row.emailVerified).toBe(true);
+    expect((await call("/sign-in/email", { email: "confirm@example.kz", password: "long-password-1" })).status).toBe(200);
   });
 });

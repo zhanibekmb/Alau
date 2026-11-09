@@ -15,6 +15,8 @@ export function authErrorMessage(error: { code?: string; status?: number } | nul
       return "Құпиясөз тым ұзын.";
     case "INVALID_EMAIL":
       return "Email дұрыс емес.";
+    case "EMAIL_NOT_VERIFIED":
+      return "Email әлі расталмаған. Поштаңызға жаңа растау хатын жібердік.";
     case "INVALID_TOKEN":
     case "TOKEN_EXPIRED":
       return "Сілтеменің мерзімі өтіп кеткен немесе ол қате. Жаңа сілтеме сұраңыз.";

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-messages";
+import { showToast } from "@/lib/toast";
 import { Mascot } from "./brand";
 
 type Mode = "sign-in" | "sign-up";
@@ -28,6 +29,9 @@ const TEXT: Record<Mode, { title: string; lead: string; submit: string; busy: st
   },
 };
 
+/** Where the confirmation link returns the reader: the same page, with a welcome notice. */
+const withVerified = (path: string) => `${path}${path.includes("?") ? "&" : "?"}verified=1`;
+
 export function LoginForm({ next, initialMode = "sign-in" }: { next: string; initialMode?: Mode }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -35,23 +39,70 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Set after sign-up (or a sign-in with an unconfirmed email): the "check your inbox" screen. */
+  const [awaiting, setAwaiting] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
   const text = TEXT[mode];
+
+  /** Next.js keeps a visited page alive, so the form is emptied whenever it is done with. */
+  const reset = () => {
+    setEmail("");
+    setPassword("");
+    setError(null);
+    setResent(false);
+  };
+
+  const switchMode = (to: Mode) => {
+    reset();
+    setAwaiting(null);
+    setMode(to);
+  };
+
+  const resend = async () => {
+    if (!awaiting || busy) return;
+    setBusy(true);
+    const { error: authError } = await authClient
+      .sendVerificationEmail({ email: awaiting, callbackURL: withVerified(next) })
+      .catch(() => ({ error: { status: 0 } as { status: number } }));
+    setBusy(false);
+    if (authError) setError(authErrorMessage(authError));
+    else setResent(true);
+  };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     setError(null);
+    const cleanEmail = email.trim().toLowerCase();
     try {
-      const cleanEmail = email.trim().toLowerCase();
       const { error: authError } =
         mode === "sign-up"
-          ? await authClient.signUp.email({ email: cleanEmail, password, name: cleanEmail.split("@")[0] })
-          : await authClient.signIn.email({ email: cleanEmail, password });
-      if (authError) {
-        setError(authErrorMessage(authError));
+          ? await authClient.signUp.email({
+              email: cleanEmail,
+              password,
+              name: cleanEmail.split("@")[0],
+              callbackURL: withVerified(next),
+            })
+          : await authClient.signIn.email({ email: cleanEmail, password, callbackURL: withVerified(next) });
+      if (authError?.code === "EMAIL_NOT_VERIFIED") {
+        // Better Auth has just sent a fresh link.
+        reset();
+        setAwaiting(cleanEmail);
         return;
       }
+      if (authError) {
+        setError(authErrorMessage(authError));
+        setPassword("");
+        return;
+      }
+      if (mode === "sign-up") {
+        reset();
+        setAwaiting(cleanEmail);
+        return;
+      }
+      reset();
+      showToast("Аккаунтқа кірдіңіз", "success");
       router.replace(next);
       router.refresh();
     } catch {
@@ -60,6 +111,41 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
       setBusy(false);
     }
   };
+
+  if (awaiting) {
+    return (
+      <div className="mx-auto flex w-full max-w-[420px] flex-col px-5">
+        <Mascot pose="onboarding-login" className="size-24" />
+        <h1 className="mt-4 text-3xl font-bold">Поштаңызды тексеріңіз</h1>
+        <p className="mt-2 text-muted">
+          <b className="font-semibold text-ink">{awaiting}</b> мекенжайына растау сілтемесін жібердік. Сілтемені ашсаңыз, аккаунтқа
+          бірден кіресіз. Сілтеме 24 сағат жарамды.
+        </p>
+        <p className="mt-3 text-sm text-muted">Хат көрінбесе, «Спам» бумасын қараңыз.</p>
+        {error && (
+          <p role="alert" className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </p>
+        )}
+        {resent && (
+          <p role="status" className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            Жаңа хат жіберілді.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={resend}
+          disabled={busy}
+          className="mt-6 h-12 rounded-2xl border border-line font-medium transition-colors hover:bg-sidebar disabled:opacity-60"
+        >
+          {busy ? "Жіберіп жатырмыз…" : "Хатты қайта жіберу"}
+        </button>
+        <button type="button" onClick={() => switchMode("sign-in")} className="mt-4 text-sm font-medium text-amber-700 underline underline-offset-2">
+          Басқа email-мен кіру
+        </button>
+      </div>
+    );
+  }
 
   const fieldClass =
     "mt-1.5 h-12 w-full rounded-2xl border border-line bg-white px-4 text-base outline-none focus:border-accent focus:ring-2 focus:ring-accent/30";
@@ -133,10 +219,7 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
         <span className="text-muted">{text.switchText} </span>
         <button
           type="button"
-          onClick={() => {
-            setMode(mode === "sign-in" ? "sign-up" : "sign-in");
-            setError(null);
-          }}
+          onClick={() => switchMode(mode === "sign-in" ? "sign-up" : "sign-in")}
           className="font-medium text-amber-700 underline underline-offset-2"
         >
           {text.switchLink}

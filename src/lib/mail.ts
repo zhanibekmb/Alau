@@ -62,3 +62,23 @@ export function passwordResetMail(to: string, url: string): Mail {
 </div>`;
   return { to, subject, text, html };
 }
+
+/** "Confirm your email" in Kazakh. The link is valid for 24 hours (auth.ts). */
+export function verificationMail(to: string, url: string): Mail {
+  const subject = "Alau: email-ыңызды растаңыз";
+  const text = [
+    "Сәлеметсіз бе!",
+    "",
+    "Alau-да аккаунт ашқаныңыз үшін рақмет. Тіркелуді аяқтау үшін мына сілтемені ашыңыз (24 сағат жарамды):",
+    url,
+    "",
+    "Егер сіз тіркелмесеңіз, хатты елемеңіз.",
+  ].join("\n");
+  const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#111">
+<p>Сәлеметсіз бе!</p>
+<p>Alau-да аккаунт ашқаныңыз үшін рақмет. Тіркелуді аяқтау үшін батырманы басыңыз. Сілтеме 24 сағат жарамды.</p>
+<p><a href="${escape(url)}" style="display:inline-block;background:#f59e0b;color:#fff;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:bold">Email-ды растау</a></p>
+<p style="color:#6e6e73;font-size:14px">Егер сіз тіркелмесеңіз, хатты елемеңіз.</p>
+</div>`;
+  return { to, subject, text, html };
+}

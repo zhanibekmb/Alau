@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Lora, PT_Serif } from "next/font/google";
 import { ReaderSync } from "@/components/reader-sync";
+import { Toaster } from "@/components/toaster";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full">
         {children}
         <ReaderSync />
+        <Toaster />
       </body>
     </html>
   );

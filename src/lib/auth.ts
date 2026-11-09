@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { getDb, type Database } from "../db";
 import * as schema from "../db/schema";
-import { passwordResetMail, sendMail } from "./mail";
+import { passwordResetMail, sendMail, verificationMail } from "./mail";
 
 // Sign-up and sign-in with email and password (plan decision D3). Accounts live in our own
 // PostgreSQL; the only outside service that sees an email is Brevo, when it sends a reset link.
@@ -25,11 +25,23 @@ export type ResetEmailSender = (data: { email: string; url: string }) => Promise
 /** Sends the reset link by email (src/lib/mail.ts). Tests pass their own sender instead. */
 const sendResetEmail: ResetEmailSender = ({ email, url }) => sendMail(passwordResetMail(email, url));
 
+/** Sends the "confirm your email" link (src/lib/mail.ts). */
+const sendVerifyEmail: ResetEmailSender = ({ email, url }) => sendMail(verificationMail(email, url));
+
 export function createAuth(
   db: Database,
-  options: { secret: string; baseURL?: string; sendResetEmail?: ResetEmailSender },
+  options: {
+    secret: string;
+    baseURL?: string;
+    sendResetEmail?: ResetEmailSender;
+    sendVerificationEmail?: ResetEmailSender;
+    /** On by default: a new account cannot sign in until its email is confirmed. Tests may turn it off. */
+    requireEmailVerification?: boolean;
+  },
 ) {
   const sendReset = options.sendResetEmail ?? sendResetEmail;
+  const sendVerify = options.sendVerificationEmail ?? sendVerifyEmail;
+  const requireEmailVerification = options.requireEmailVerification ?? true;
   return betterAuth({
     database: drizzleAdapter(db, { provider: "pg", schema }),
     secret: options.secret,
@@ -38,12 +50,26 @@ export function createAuth(
       enabled: true,
       minPasswordLength: PASSWORD_MIN_LENGTH,
       maxPasswordLength: PASSWORD_MAX_LENGTH,
-      autoSignIn: true,
+      // With verification on, sign-up creates the account but no session: the email link signs in.
+      autoSignIn: !requireEmailVerification,
+      requireEmailVerification,
       // "Құпиясөзді ұмыттым": a one-hour link by email; a new password signs out every device.
       resetPasswordTokenExpiresIn: 60 * 60,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendReset({ email: user.email, url });
+      },
+    },
+    // Confirms that the email belongs to the reader, so nobody signs up with someone else's address.
+    // The link lives 24 hours, signs the reader in and returns them where they started.
+    emailVerification: {
+      sendOnSignUp: true,
+      // A sign-in attempt with an unconfirmed email sends a fresh link.
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 24 * 60 * 60,
+      sendVerificationEmail: async ({ user, url }) => {
+        await sendVerify({ email: user.email, url });
       },
     },
     rateLimit: {

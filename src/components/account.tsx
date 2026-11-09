@@ -9,6 +9,7 @@ import { daysLeft, formatKkDate, remainingText } from "@/lib/kk-date";
 import { findPremiumPlan } from "@/lib/plans";
 import { flushBeforeSignOut, forgetAccountData } from "@/lib/sync-client";
 import { useEntitlements } from "@/lib/use-entitlements";
+import { showToast } from "@/lib/toast";
 import { useNow } from "@/lib/use-now";
 import { Mascot } from "./brand";
 import { LogoutIcon } from "./icons";
@@ -36,8 +37,13 @@ export function useSignOut() {
     await flushBeforeSignOut();
     const { error } = await authClient.signOut();
     // The account's progress and words are on the server; a shared computer keeps none of them.
-    if (!error) forgetAccountData();
     setSigningOut(false);
+    if (error) {
+      showToast("Шығу мүмкін болмады. Интернетті тексеріп, қайталаңыз.");
+      return;
+    }
+    forgetAccountData();
+    showToast("Аккаунттан шықтыңыз. Прогресс пен сөздік аккаунтыңызда сақталды.", "success");
     router.refresh();
   };
   return { signOut, signingOut };
