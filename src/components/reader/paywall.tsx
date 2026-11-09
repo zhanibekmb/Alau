@@ -10,6 +10,7 @@ import type { BookInfo } from "@/lib/types";
 import { LEGAL } from "@/content/legal";
 import { Mascot } from "../brand";
 import { CheckIcon } from "../icons";
+import type { TransferDetails } from "@/lib/transfer";
 
 // The paywall at the first paid chapter (docs/paywall-plan.md, T6).
 //
@@ -17,6 +18,7 @@ import { CheckIcon } from "../icons";
 //   signed in  → choose → POST /api/paywall/choice
 //                           ├─ unlocked (demo)      → onUnlocked(): the reader loads the chapter
 //                           ├─ not unlocked (interest) → "payment opens soon"
+//                           ├─ not unlocked (transfer) → how to pay by Kaspi transfer and send the receipt
 //                           └─ 401 / 429 / 503 / offline → message, button works again
 
 type Option = { kind: EntitlementKind; title: string; price: number; per: string; note: string; best?: boolean };
@@ -57,7 +59,7 @@ export function Paywall({
   const [selected, setSelected] = useState<EntitlementKind>("premium_monthly");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [interestSaved, setInterestSaved] = useState(false);
+  const [saved, setSaved] = useState<{ transfer: TransferDetails | null; email?: string } | null>(null);
   const firstPage = book.chapters.find((c) => c.n === chapter)?.firstPage ?? 1;
   const returnTo = `/read/${book.slug}?page=${firstPage}`;
   const loginHref = `/login?mode=sign-up&next=${encodeURIComponent(returnTo)}`;
@@ -95,9 +97,9 @@ export function Paywall({
         setError(response.status === 429 ? "Тым көп әрекет. Бір минуттан кейін қайталаңыз." : "Бір нәрсе дұрыс болмады. Қайталап көріңіз.");
         return;
       }
-      const result = (await response.json()) as { unlocked: boolean };
+      const result = (await response.json()) as { unlocked: boolean; transfer?: TransferDetails | null; email?: string };
       if (result.unlocked) onUnlocked();
-      else setInterestSaved(true);
+      else setSaved({ transfer: result.transfer ?? null, email: result.email });
     } catch {
       setError("Байланыс жоқ. Интернетті тексеріп, қайталаңыз.");
     } finally {
@@ -105,7 +107,20 @@ export function Paywall({
     }
   };
 
-  if (interestSaved) {
+  if (saved?.transfer) {
+    const option = choices.find((c) => c.kind === selected)!;
+    return (
+      <TransferSteps
+        option={option}
+        bookTitle={book.title}
+        transfer={saved.transfer}
+        email={saved.email ?? ""}
+        onBack={() => setSaved(null)}
+      />
+    );
+  }
+
+  if (saved) {
     return (
       <section className="flex flex-col items-center gap-3 py-12 text-center" aria-live="polite">
         <Mascot pose="subscription" className="size-24" />
@@ -202,6 +217,111 @@ export function Paywall({
           </Link>
         </p>
       )}
+    </section>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard
+          ?.writeText(text)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          })
+          .catch(() => {});
+      }}
+      className="shrink-0 rounded-lg border border-[var(--r-line)] px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[var(--r-soft)]"
+    >
+      {copied ? "Көшірілді" : "Көшіру"}
+    </button>
+  );
+}
+
+/** PAYMENTS_MODE=transfer: how to pay by Kaspi and where to send the receipt. */
+function TransferSteps({ option, bookTitle, transfer, email, onBack }: {
+  option: Option;
+  bookTitle: string;
+  transfer: TransferDetails;
+  email: string;
+  onBack: () => void;
+}) {
+  const what = option.kind === "single_book" ? `${option.title}: «${bookTitle}»` : option.title;
+  const step = "flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-white";
+
+  return (
+    <section className="mx-auto max-w-[520px] py-8 md:py-12" aria-labelledby="transfer-title" aria-live="polite">
+      <div className="flex items-center gap-4">
+        <Mascot pose="subscription" className="size-20 shrink-0" />
+        <div>
+          <h2 id="transfer-title" className="text-2xl font-bold">
+            Қалай төлеуге болады
+          </h2>
+          <p className="text-[var(--r-muted)]">
+            {what} · <b className="font-semibold text-[var(--r-fg)]">{formatTenge(option.price)}</b>
+          </p>
+        </div>
+      </div>
+
+      <ol className="mt-6 flex flex-col gap-4">
+        <li className="flex gap-3">
+          <span className={step}>1</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">Kaspi арқылы {formatTenge(option.price)} аударыңыз</p>
+            <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--r-line)] bg-[var(--r-panel)] p-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-lg font-semibold tabular-nums">{transfer.account}</p>
+                <p className="text-sm text-[var(--r-muted)]">Алушы: {transfer.recipient}</p>
+              </div>
+              <CopyButton text={transfer.account} />
+            </div>
+          </div>
+        </li>
+        <li className="flex gap-3">
+          <span className={step}>2</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">Аударымның түсініктемесіне email-ыңызды жазыңыз</p>
+            <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--r-line)] bg-[var(--r-panel)] p-3">
+              <p className="min-w-0 flex-1 truncate">{email}</p>
+              <CopyButton text={email} />
+            </div>
+          </div>
+        </li>
+        <li className="flex gap-3">
+          <span className={step}>3</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">Чектің скриншотын жіберіңіз</p>
+            <a
+              href={transfer.contactHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex h-11 items-center rounded-2xl bg-accent px-5 font-semibold text-on-accent"
+            >
+              {transfer.contactLabel}
+            </a>
+          </div>
+        </li>
+        <li className="flex gap-3">
+          <span className={step}>4</span>
+          <p className="min-w-0 flex-1 font-medium">
+            Біз 24 сағат ішінде қолжетімділікті ашамыз. Ол профильдегі «Менің тарифім» бөлімінде көрінеді, ал осы кітап
+            бірден жалғасады.
+          </p>
+        </li>
+      </ol>
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <button type="button" onClick={onBack} className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
+          Басқа тариф таңдау
+        </button>
+        <Link href="/" className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
+          Кітапханаға оралу
+        </Link>
+      </div>
     </section>
   );
 }

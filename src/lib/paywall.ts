@@ -7,7 +7,7 @@ import { findPremiumPlan, premiumExpiresAt } from "./plans";
 
 // What happens when a reader picks a tariff (docs/paywall-plan.md, "Поток кнопки «Купить»").
 //
-//   interest ─▶ paywall_events: plan_chosen ─▶ { unlocked: false }
+//   interest, transfer ─▶ paywall_events: plan_chosen ─▶ { unlocked: false }
 //   demo     ─▶ lock this reader ─▶ already has it? ─ yes ─▶ { unlocked: true }
 //                                        │ no
 //                                        ▼
@@ -24,7 +24,8 @@ export async function choosePlan(
 ): Promise<ChoiceResult> {
   const event = { userId, anonId: choice.anonId, plan: choice.plan, work: choice.work, slug: choice.slug, chapter: choice.chapter };
 
-  if (mode === "interest") {
+  // Only demo grants access here. Transfer access is given by an admin after the money arrives.
+  if (mode !== "demo") {
     await db.insert(paywallEvents).values({ ...event, type: "plan_chosen", createdAt: now });
     return { unlocked: false };
   }

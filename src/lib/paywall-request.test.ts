@@ -15,6 +15,8 @@ describe("paymentsMode", () => {
   it("unlocks only for exactly 'demo'", () => {
     expect(paymentsMode("demo")).toBe("demo");
     expect(paymentsMode("interest")).toBe("interest");
+    expect(paymentsMode("transfer")).toBe("transfer");
+    expect(paymentsMode("Transfer")).toBe("interest");
     expect(paymentsMode(undefined)).toBe("interest");
     expect(paymentsMode("")).toBe("interest");
     expect(paymentsMode("Demo")).toBe("interest");

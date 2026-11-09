@@ -1,6 +1,6 @@
-import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import type { Database } from "../db";
-import { entitlements, user } from "../db/schema";
+import { entitlements, paywallEvents, user } from "../db/schema";
 import type { EntitlementKind } from "./access";
 import { findPremiumPlan, premiumExpiresAt } from "./plans";
 
@@ -101,4 +101,66 @@ export async function revokeGrant(db: Database, id: string): Promise<boolean> {
     .where(and(eq(entitlements.id, id), inArray(entitlements.source, [...REVOCABLE])))
     .returning({ id: entitlements.id });
   return removed.length > 0;
+}
+
+export type PlanRequest = {
+  userId: string;
+  email: string;
+  plan: EntitlementKind;
+  work: string | null;
+  at: Date;
+  /** The reader can already read what they asked for (given by hand, or bought). */
+  granted: boolean;
+};
+
+/**
+ * Readers who chose a tariff (plan_chosen events), newest first, one row per reader and tariff.
+ * In PAYMENTS_MODE=transfer these are the people who may have sent money.
+ */
+export async function listPlanRequests(db: Database, now: Date, limit = 50): Promise<PlanRequest[]> {
+  const events = await db
+    .select({
+      userId: paywallEvents.userId,
+      email: user.email,
+      plan: paywallEvents.plan,
+      work: paywallEvents.work,
+      at: paywallEvents.createdAt,
+    })
+    .from(paywallEvents)
+    .innerJoin(user, eq(user.id, paywallEvents.userId))
+    .where(and(eq(paywallEvents.type, "plan_chosen"), isNotNull(paywallEvents.plan)))
+    .orderBy(desc(paywallEvents.createdAt))
+    .limit(limit * 4);
+
+  const seen = new Set<string>();
+  const latest = events.filter((e) => {
+    // A book request is per work; premium requests are the same whichever book they came from.
+    const key = `${e.userId}|${e.plan}|${e.plan === "single_book" ? e.work : ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, limit);
+
+  const userIds = [...new Set(latest.map((e) => e.userId!))];
+  const owned =
+    userIds.length === 0
+      ? []
+      : await db
+          .select({ userId: entitlements.userId, kind: entitlements.kind, work: entitlements.work, expiresAt: entitlements.expiresAt })
+          .from(entitlements)
+          .where(inArray(entitlements.userId, userIds));
+
+  return latest.map((e) => {
+    const mine = owned.filter((o) => o.userId === e.userId);
+    const premium = mine.some((o) => o.kind !== "single_book" && o.expiresAt !== null && o.expiresAt > now);
+    const book = e.plan === "single_book" && mine.some((o) => o.kind === "single_book" && o.work === e.work);
+    return {
+      userId: e.userId!,
+      email: e.email,
+      plan: e.plan!,
+      work: e.plan === "single_book" ? e.work : null,
+      at: e.at,
+      granted: premium || book,
+    };
+  });
 }

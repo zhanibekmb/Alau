@@ -5,7 +5,7 @@ import { entitlements, user } from "../db/schema";
 import { createTestDb, resetDb } from "../db/test-db";
 import { canReadChapter } from "./access";
 import { loadEntitlements } from "./entitlements";
-import { findUserByEmail, grantAccess, listManualGrants, revokeGrant } from "./manual-access";
+import { findUserByEmail, grantAccess, listManualGrants, listPlanRequests, revokeGrant } from "./manual-access";
 import { choosePlan } from "./paywall";
 
 let db: Database;
@@ -77,5 +77,37 @@ describe("manual access", () => {
     expect(await revokeGrant(db, demo.id)).toBe(true);
     expect(await db.$count(entitlements)).toBe(0);
     expect(await revokeGrant(db, demo.id)).toBe(false);
+  });
+});
+
+describe("tariff requests (PAYMENTS_MODE=transfer)", () => {
+  const pick = (plan: "single_book" | "premium_monthly", work = WORK) =>
+    choosePlan(db, "u1", { plan, work, slug: "s", chapter: 7, anonId: null }, "transfer", NOW);
+
+  it("records the choice and gives nothing by itself", async () => {
+    expect(await pick("premium_monthly")).toEqual({ unlocked: false });
+    expect(await db.$count(entitlements)).toBe(0);
+    expect(await canRead(NOW)).toBe("payment_required");
+  });
+
+  it("lists one row per reader and tariff, marked once access is given", async () => {
+    await pick("premium_monthly");
+    await pick("premium_monthly", "other-work");
+    await pick("single_book");
+    let requests = await listPlanRequests(db, NOW);
+    expect(requests.map((r) => [r.email, r.plan, r.work, r.granted])).toEqual([
+      ["aikyn@example.kz", "single_book", WORK, false],
+      ["aikyn@example.kz", "premium_monthly", null, false],
+    ]);
+
+    await grantAccess(db, { userId: "u1", kind: "single_book", work: WORK, now: NOW });
+    requests = await listPlanRequests(db, NOW);
+    expect(requests.find((r) => r.plan === "single_book")?.granted).toBe(true);
+    expect(requests.find((r) => r.plan === "premium_monthly")?.granted).toBe(false);
+
+    await grantAccess(db, { userId: "u1", kind: "premium_monthly", work: null, now: NOW });
+    expect((await listPlanRequests(db, NOW)).every((r) => r.granted)).toBe(true);
+    // After premium runs out the request shows as open again.
+    expect((await listPlanRequests(db, new Date(NOW.getTime() + 40 * DAY))).find((r) => r.plan === "premium_monthly")?.granted).toBe(false);
   });
 });

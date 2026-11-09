@@ -7,10 +7,13 @@ import type { EntitlementKind } from "@/lib/access";
 import { isAdminEmail } from "@/lib/admin";
 import { findEdition, findPaidWork, listPaidWorks } from "@/lib/catalog";
 import { formatKkDate } from "@/lib/kk-date";
-import { listManualGrants, type ManualGrant } from "@/lib/manual-access";
+import { listManualGrants, listPlanRequests, type ManualGrant, type PlanRequest } from "@/lib/manual-access";
+import { currentPaymentsMode } from "@/lib/payments-mode";
+import { findPremiumPlan } from "@/lib/plans";
+import { transferDetails } from "@/lib/transfer";
 import { getCurrentUser } from "@/lib/dal";
 import { loadPaywallStats, type PaywallStats } from "@/lib/paywall-stats";
-import { revokeAction } from "./actions";
+import { grantRequestAction, revokeAction } from "./actions";
 import { GrantForm } from "./grant-form";
 
 // Paywall results for the team (docs/paywall-plan.md, D11 and T8). Only emails in ADMIN_EMAILS.
@@ -39,7 +42,12 @@ export default async function PaywallResultsPage() {
     notFound();
   }
 
-  const [[week, month], grants] = await Promise.all([loadPeriods(), listManualGrants(getDb())]);
+  const [[week, month], grants, requests] = await Promise.all([
+    loadPeriods(),
+    listManualGrants(getDb()),
+    listPlanRequests(getDb(), new Date()),
+  ]);
+  const mode = currentPaymentsMode();
   const works = listPaidWorks().map(({ work, title }) => ({ work, title }));
   const periods: [string, PaywallStats][] = [
     ["7 күн", week],
@@ -56,7 +64,19 @@ export default async function PaywallResultsPage() {
         Адам — аккаунт немесе кірмеген браузер. «Тариф таңдады»: interest режиміндегі таңдау немесе демо ашу.
       </p>
 
-      <section className="mt-8" aria-labelledby="grant-title">
+      <ModeNote mode={mode} />
+
+      <section className="mt-8" aria-labelledby="requests-title">
+        <h2 id="requests-title" className="text-xl font-bold">
+          Тариф сұраныстары
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Тариф таңдаған оқырмандар. Kaspi-де аударым мен түсініктемедегі email-ды тексеріп, «Ашу» батырмасын басыңыз.
+        </p>
+        <RequestsTable requests={requests} />
+      </section>
+
+      <section className="mt-10" aria-labelledby="grant-title">
         <h2 id="grant-title" className="text-xl font-bold">
           Қолмен қолжетімділік беру
         </h2>
@@ -127,6 +147,75 @@ export default async function PaywallResultsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+/** Which payment mode is on, so the admin knows what readers see. */
+function ModeNote({ mode }: { mode: "demo" | "interest" | "transfer" }) {
+  const text =
+    mode === "demo"
+      ? "Режим: demo — тариф таңдаған кезде қолжетімділік бірден ашылады. Тек өз компьютеріңізде қолданыңыз."
+      : mode === "transfer"
+        ? transferDetails()
+          ? "Режим: transfer — оқырман Kaspi аударымы туралы нұсқаулықты көреді, қолжетімділікті сіз ашасыз."
+          : "Режим: transfer, бірақ .env ішінде TRANSFER_KASPI, TRANSFER_NAME, TRANSFER_CONTACT толық емес — оқырман нұсқаулықты көрмейді."
+        : "Режим: interest — таңдау тек жазылады, оқырман «Төлем жақында ашылады» деген хабарды көреді.";
+  const warn = mode === "demo" || (mode === "transfer" && !transferDetails());
+  return (
+    <p className={`mt-5 rounded-2xl px-4 py-3 text-sm ${warn ? "bg-amber-50 text-amber-900" : "bg-sidebar text-muted"}`}>{text}</p>
+  );
+}
+
+function requestPrice(request: PlanRequest): number | null {
+  if (request.plan === "single_book") return request.work ? (findPaidWork(request.work)?.priceTenge ?? null) : null;
+  return findPremiumPlan(request.plan)?.priceTenge ?? null;
+}
+
+function RequestsTable({ requests }: { requests: PlanRequest[] }) {
+  if (requests.length === 0) return <p className="mt-4 text-sm text-muted">Әзірге сұраныс жоқ.</p>;
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <table className="w-full min-w-[620px] text-left text-sm">
+        <thead className="text-muted">
+          <tr className="border-b border-line">
+            <th className="py-2 pr-4 font-medium">Оқырман</th>
+            <th className="py-2 pr-4 font-medium">Тариф</th>
+            <th className="py-2 pr-4 text-right font-medium">Сомасы</th>
+            <th className="py-2 pr-4 font-medium">Қашан</th>
+            <th className="py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((request) => {
+            const price = requestPrice(request);
+            const planValue = request.plan === "single_book" ? `book:${request.work}` : request.plan;
+            return (
+              <tr key={`${request.userId}-${planValue}`} className="border-b border-line">
+                <td className="py-2 pr-4">{request.email}</td>
+                <td className="py-2 pr-4">
+                  {request.work ? `Кітап: ${findPaidWork(request.work)?.title ?? request.work}` : PLAN_NAMES[request.plan]}
+                </td>
+                <td className="py-2 pr-4 text-right tabular-nums">{price ? `${price.toLocaleString("ru-RU")} ₸` : "—"}</td>
+                <td className="py-2 pr-4 text-muted">{formatKkDate(request.at)}</td>
+                <td className="py-2 text-right">
+                  {request.granted ? (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">Ашылған</span>
+                  ) : (
+                    <form action={grantRequestAction}>
+                      <input type="hidden" name="email" value={request.email} />
+                      <input type="hidden" name="plan" value={planValue} />
+                      <button type="submit" className="rounded-lg bg-accent px-3 py-1 font-semibold text-white">
+                        Ашу
+                      </button>
+                    </form>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -25,12 +25,10 @@ function parsePlan(value: string): { kind: EntitlementKind; work: string | null 
   return null;
 }
 
-export async function grantAction(_previous: GrantState, form: FormData): Promise<GrantState> {
-  const adminId = await isAdmin();
-  if (!adminId) return { ok: false, message: "Рұқсат жоқ." };
-
-  const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const plan = parsePlan(String(form.get("plan") ?? ""));
+/** Shared by the form and the "Ашу" button on a request. */
+async function grant(adminId: string, emailValue: string, planValue: string): Promise<GrantState> {
+  const email = emailValue.trim().toLowerCase();
+  const plan = parsePlan(planValue);
   if (!email.includes("@")) return { ok: false, message: "Email дұрыс емес." };
   if (!plan) return { ok: false, message: "Тарифті таңдаңыз." };
 
@@ -51,6 +49,19 @@ export async function grantAction(_previous: GrantState, form: FormData): Promis
     console.error("[admin] grant failed:", error);
     return { ok: false, message: "Қате болды, қайталап көріңіз." };
   }
+}
+
+export async function grantAction(_previous: GrantState, form: FormData): Promise<GrantState> {
+  const adminId = await isAdmin();
+  if (!adminId) return { ok: false, message: "Рұқсат жоқ." };
+  return grant(adminId, String(form.get("email") ?? ""), String(form.get("plan") ?? ""));
+}
+
+/** "Ашу" on a tariff request: gives exactly what the reader asked for. */
+export async function grantRequestAction(form: FormData): Promise<void> {
+  const adminId = await isAdmin();
+  if (!adminId) return;
+  await grant(adminId, String(form.get("email") ?? ""), String(form.get("plan") ?? ""));
 }
 
 export async function revokeAction(form: FormData): Promise<void> {
