@@ -8,7 +8,7 @@ import { BookOpenIcon, HomeIcon, UserIcon, WordsIcon } from "./icons";
 
 const LINKS = [
   { href: "/", label: "Кітапхана", Icon: HomeIcon },
-  { href: "/my-books", label: "Менің кітаптарым", shortLabel: "Кітаптарым", Icon: BookOpenIcon },
+  { href: "/my-books", label: "Менің кітаптарым", Icon: BookOpenIcon },
   { href: "/dictionary", label: "Сөздік", Icon: WordsIcon },
   { href: "/profile", label: "Профиль", Icon: UserIcon },
 ];
@@ -49,23 +49,25 @@ export function Sidebar() {
         </div>
       </aside>
 
+      {/* Phone: a floating pill. The active tab shows its label, the others only an icon. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-30 flex h-[60px] -translate-x-1/2 items-center gap-0.5 rounded-[20px] bg-white p-[5px] shadow-lg shadow-black/10 ring-1 ring-black/5 md:hidden"
         aria-label="Негізгі мәзір"
       >
-        {LINKS.map(({ href, label, shortLabel, Icon }) => {
+        {LINKS.map(({ href, label, Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
-                active ? "text-amber-700" : "text-muted"
+              aria-label={active ? undefined : label}
+              className={`flex h-[50px] shrink-0 items-center justify-center rounded-[15px] ${
+                active ? "gap-2 bg-accent px-3.5 font-medium whitespace-nowrap text-white" : "w-10 text-ink"
               }`}
             >
-              <Icon className="size-6" />
-              {shortLabel ?? label}
+              <Icon className="size-6 shrink-0" />
+              {active && label}
             </Link>
           );
         })}

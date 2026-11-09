@@ -1,22 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { progressPercent } from "@/lib/state";
 import { useAppState, useHydrated } from "@/lib/store";
 import { LEVELS, type BookInfo, type Level } from "@/lib/types";
 import { BookCard, BookCover } from "./book-card";
-import { Logo, Mascot } from "./brand";
+import { Flame, Mascot } from "./brand";
 import { SearchIcon } from "./icons";
 
 type Filter = Level | "all";
-const LEVEL_NAMES: Record<Filter, string> = {
+export const LEVEL_NAMES: Record<Filter, string> = {
   all: "Барлығы",
   A1: "A1 - Бастауыш",
   A2: "A2",
   B1: "B1",
   B2: "B2",
 };
+
+/** Phone page header from the Figma Mobile Version: title, flame mark, one-line purpose. */
+export function PhoneHeader({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <header className="md:hidden">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <Flame className="size-[30px] shrink-0" />
+      </div>
+      <p className="mt-[15px] text-sm leading-[19px] text-muted">{children}</p>
+    </header>
+  );
+}
+
+export function SearchField({ label, value, onChange, placeholder, className = "" }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  return (
+    <label className={`relative block ${className}`}>
+      <span className="sr-only">{label}</span>
+      <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-5 -translate-y-1/2 text-muted md:left-3" />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-10 w-full rounded-xl border border-line bg-white pl-10 pr-3 outline-accent placeholder:text-muted/70 md:h-12 md:rounded-2xl"
+      />
+    </label>
+  );
+}
+
+/** Filter pills. On a phone they scroll sideways instead of wrapping. */
+export function ChipRow({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className={`-mx-5 flex gap-2.5 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`h-10 shrink-0 rounded-full px-[15px] text-sm font-medium whitespace-nowrap transition-colors md:px-4 ${
+        active ? "bg-ink text-white" : "bg-chip text-muted hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function ContinueCard({ books }: { books: BookInfo[] }) {
   const { progress } = useAppState();
@@ -99,43 +162,34 @@ export function Catalog({ books }: { books: BookInfo[] }) {
   }, [books, filter, query]);
 
   return (
-    <div className="mx-auto w-full max-w-[913px] px-4 pb-10 pt-5 md:px-8 md:pt-12">
-      <Logo className="mb-4 text-3xl md:hidden" />
-      <ContinueCard books={books} />
-
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold">Кітапхана</h1>
-        <label className="relative block sm:w-[330px]">
-          <span className="sr-only">Іздеу</span>
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Іздеу"
-            className="h-12 w-full rounded-2xl border border-line bg-white pl-10 pr-3 outline-accent"
-          />
-        </label>
+    <div className="mx-auto w-full max-w-[913px] px-5 pb-10 pt-4 md:px-8 md:pt-12">
+      <PhoneHeader title="Кітапхана">Деңгейіңізге сай бейімделген ағылшынша кітаптар мен интерактивті сөздік</PhoneHeader>
+      {/* On a phone the continue card lives on the My books page (Figma, Mobile Version). */}
+      <div className="max-md:hidden">
+        <ContinueCard books={books} />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Деңгей">
+      <div className="mt-[15px] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:mt-8">
+        <h1 className="text-3xl font-bold max-md:hidden">Кітапхана</h1>
+        <SearchField
+          label="Іздеу"
+          value={query}
+          onChange={setQuery}
+          placeholder="Кітап немесе авторды іздеу..."
+          className="sm:w-[330px]"
+        />
+      </div>
+
+      <ChipRow label="Деңгей" className="mt-5 md:mt-4">
         {(["all", ...LEVELS] as Filter[]).map((level) => (
-          <button
-            key={level}
-            type="button"
-            aria-pressed={filter === level}
-            onClick={() => setChosen(level)}
-            className={`h-10 rounded-full px-4 text-sm font-medium transition-colors ${
-              filter === level ? "bg-ink text-white" : "bg-chip text-muted hover:text-ink"
-            }`}
-          >
+          <Chip key={level} active={filter === level} onClick={() => setChosen(level)}>
             {LEVEL_NAMES[level]}
-          </button>
+          </Chip>
         ))}
-      </div>
+      </ChipRow>
 
       {visible.length > 0 ? (
-        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-[15px] grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 md:mt-6 md:gap-y-6 lg:grid-cols-4">
           {visible.map((book) => (
             <BookCard key={book.slug} book={book} />
           ))}
@@ -152,8 +206,8 @@ export function Catalog({ books }: { books: BookInfo[] }) {
 
 export function CatalogSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[913px] animate-pulse px-4 pt-5 md:px-8 md:pt-12">
-      <div className="h-[132px] rounded-3xl bg-sidebar sm:h-[180px]" />
+    <div className="mx-auto w-full max-w-[913px] animate-pulse px-5 pt-4 md:px-8 md:pt-12">
+      <div className="h-[138px] rounded-3xl bg-sidebar md:h-[180px]" />
       <div className="mt-8 h-10 w-48 rounded-xl bg-sidebar" />
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (

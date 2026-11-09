@@ -11,6 +11,15 @@ export function Logo({ className = "" }: { className?: string }) {
   );
 }
 
+/** The flame alone: the logo mark in the phone page headers. */
+export function Flame({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <path d={FLAME} fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Temporary drawing. Swap it for the Figma mascot images when Figma access returns. */
 export function Mascot({ className = "" }: { className?: string }) {
   return (

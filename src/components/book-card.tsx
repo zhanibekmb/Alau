@@ -38,18 +38,20 @@ export function BookCard({
 }) {
   return (
     <Link href={href ?? `/books/${book.slug}`} scroll={false} className="group block min-w-0">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-chip transition-transform group-hover:-translate-y-0.5">
+      <div className="relative aspect-[168/230] overflow-hidden rounded-xl bg-chip transition-transform group-hover:-translate-y-0.5 md:aspect-[3/4] md:rounded-2xl">
         <BookCover cover={book.cover} className="size-full" />
         <span className="absolute left-2 top-2 rounded-lg bg-white/85 px-2 py-0.5 text-xs font-medium">
-          {book.level}
+          {/* Phone cards show the new words (Figma Mobile Version); the level is in the filter above. */}
+          <span className="md:hidden">+{book.keyWords.length} сөз</span>
+          <span className="max-md:hidden">{book.level}</span>
         </span>
         <span className="absolute bottom-2 right-2 rounded-lg bg-white/85 px-2 py-0.5 text-xs font-medium">
           {book.minutes} мин
         </span>
       </div>
-      <h3 className="mt-2 font-semibold leading-snug">{book.title}</h3>
+      <h3 className="mt-2 text-[15px] font-semibold leading-[19px] md:text-base md:leading-snug">{book.title}</h3>
       {percent === undefined ? (
-        <p className="truncate text-sm text-muted">{book.author}</p>
+        <p className="truncate text-[13px] text-muted md:text-sm">{book.author}</p>
       ) : (
         <div className="mt-1">
           <div className="h-1.5 overflow-hidden rounded-full bg-chip">

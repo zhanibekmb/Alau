@@ -213,28 +213,28 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
   return (
     <div data-theme={settings.theme} className="reader min-h-dvh">
       <header className="sticky top-0 z-20 bg-[var(--r-bg)]">
-        <div className="mx-auto flex h-[66px] max-w-[1146px] items-center gap-2 px-3 md:h-[90px] md:gap-2.5 md:px-6">
+        <div className="mx-auto flex h-[65px] max-w-[1146px] items-center gap-2.5 px-2.5 md:h-[90px] md:px-6">
           <button
             type="button"
             onClick={() => setPanel("chapters")}
-            className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 md:h-[50px] md:max-w-[490px] md:px-4"
+            className="flex h-[50px] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3.5 md:max-w-[490px] md:px-4"
           >
             <MenuIcon className="size-5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-left text-sm font-medium md:text-base">
-              <span className="max-sm:hidden">{book.title}: </span>
-              {chapterInfo ? `${chapterInfo.n}-тарау` : ""}
+            <span className="line-clamp-2 min-w-0 flex-1 text-left text-[13px] font-medium leading-[17px] md:line-clamp-1 md:text-base">
+              {book.title}: {chapterInfo ? `${chapterInfo.n}-тарау` : ""}
             </span>
             <CaretIcon className="size-5 shrink-0" />
           </button>
           <span className="flex-1 max-md:hidden" />
+          {/* On a phone the word count sits in the footer (Figma Mobile Version, Reader-page). */}
           <Link
             href="/dictionary"
             aria-label={`Сөздікке: ${bookWordCount} сөз`}
-            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 text-sm font-medium"
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 text-sm font-medium max-md:hidden"
           >
             <WordsIcon className="size-5" />
-            <span className="max-md:hidden">Сөздікке:</span>
-            <span className="text-accent">{bookWordCount}<span className="max-md:hidden"> сөз</span></span>
+            Сөздікке:
+            <span className="text-accent">{bookWordCount} сөз</span>
           </Link>
           {file?.original && (
             <button
@@ -259,7 +259,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[680px] px-4 pb-10 pt-6 md:pt-10">
+      <main className="mx-auto w-full max-w-[680px] px-5 pb-10 pt-5 md:px-4 md:pt-10">
         {showFinish ? (
           <FinishScreen
             book={book}
@@ -307,26 +307,36 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
               <PageText page={pageData} selection={selection} savedIds={savedIds} onTap={onTap} />
             </article>
 
-            <footer className="mt-2 grid grid-cols-3 items-center border-t border-[var(--r-line)] pt-6">
-              <div>
+            <footer className="mt-2 flex items-center justify-between gap-2 border-t border-[var(--r-line)] pt-5 md:grid md:grid-cols-3 md:pt-6">
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/dictionary"
+                  aria-label={`Сөздікке: ${bookWordCount} сөз`}
+                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3.5 font-medium text-accent md:hidden"
+                >
+                  <span aria-hidden="true">📔</span>
+                  {bookWordCount}
+                </Link>
                 {page !== null && page > 1 && (
                   <button
                     type="button"
                     onClick={() => goTo(page - 1)}
-                    className="flex h-[50px] items-center gap-1.5 rounded-2xl pr-3 font-medium text-[var(--r-muted)]"
+                    aria-label="Артқа"
+                    className="flex items-center justify-center font-medium text-[var(--r-muted)] max-md:size-10 max-md:rounded-full max-md:border max-md:border-[var(--r-line)] md:h-[50px] md:gap-1.5 md:rounded-2xl md:pr-3"
                   >
                     <ArrowLeftIcon className="size-5" />
-                    Артқа
+                    <span className="max-md:hidden">Артқа</span>
                   </button>
                 )}
               </div>
               <p className="text-center text-[var(--r-muted)]">
-                {page}/{book.totalPages} бет
+                {page}
+                <span className="max-md:sr-only">/{book.totalPages} бет</span>
               </p>
               <button
                 type="button"
                 onClick={onNext}
-                className="flex h-[50px] items-center justify-center gap-1.5 justify-self-end rounded-2xl bg-accent px-5 font-medium text-on-accent"
+                className="flex h-10 items-center justify-center gap-1.5 justify-self-end rounded-full bg-accent px-4 font-medium text-on-accent md:h-[50px] md:rounded-2xl md:px-5"
               >
                 {page === book.totalPages ? "Аяқтау" : "Келесі"}
                 <ArrowRightIcon className="size-5" />

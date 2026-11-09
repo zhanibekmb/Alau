@@ -13,7 +13,10 @@ function Overlay({ label, onClose, children, position }: {
   position: string;
 }) {
   return (
-    <div className={`fixed inset-0 z-40 flex justify-center bg-black/45 p-3 ${position}`} onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-40 flex justify-center bg-black/45 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-3 md:pb-3 ${position}`}
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -130,14 +133,18 @@ const THEMES: { id: ReaderTheme; label: string; color: string }[] = [
 export function SettingsPanel({ settings, onClose }: { settings: Settings; onClose: () => void }) {
   return (
     <Overlay label="Оқу баптаулары" onClose={onClose} position="items-end">
-      <div className="flex items-center justify-between">
+      {/* Phone: a grab handle and a centred title, closed by tapping outside (Figma, Reader-setting-page). */}
+      <div className="mx-auto -mt-1 mb-2.5 h-[5px] w-[60px] rounded-full bg-[var(--r-line)] md:hidden" aria-hidden="true" />
+      <div className="flex items-center justify-center md:justify-between">
         <h2 className="text-sm font-semibold tracking-wide text-[var(--r-muted)]">ОҚУ БАПТАУЛАРЫ</h2>
-        <button type="button" onClick={onClose} aria-label="Жабу" className="-m-1 p-1">
+        <button type="button" onClick={onClose} aria-label="Жабу" className="-m-1 p-1 max-md:hidden">
           <CloseIcon className="size-6" />
         </button>
       </div>
 
-      <p className="mt-4 text-center text-sm font-medium">Шрифт түрі</p>
+      <p className="mt-5 text-center text-sm font-medium max-md:text-[var(--r-muted)] md:mt-4">
+        Шрифт түрі<span className="md:hidden"> (Font)</span>
+      </p>
       <div className="mt-2 grid grid-cols-3 gap-1 rounded-2xl bg-[var(--r-line)] p-1" role="group" aria-label="Шрифт түрі">
         {FONTS.map(({ id, label, family }) => (
           <button
@@ -163,7 +170,7 @@ export function SettingsPanel({ settings, onClose }: { settings: Settings; onClo
           step={1}
           value={settings.fontSize}
           onChange={(event) => updateSettings({ fontSize: Number(event.target.value) })}
-          className="h-6 flex-1 accent-[var(--color-accent)]"
+          className="h-6 flex-1 accent-[var(--r-fg)] md:accent-[var(--color-accent)]"
         />
         <span aria-hidden="true" className="text-xl">Aa</span>
       </label>
