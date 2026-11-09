@@ -108,7 +108,7 @@ export function ContinueCard({ books }: { books: BookInfo[] }) {
     const first = books.find((b) => b.level === "A2") ?? books[0];
     return (
       <section className="flex items-center gap-4 rounded-3xl bg-white p-5 shadow-lg shadow-black/8 ring-1 ring-black/5">
-        <Mascot className="size-16 shrink-0 sm:size-20" />
+        <Mascot className="size-20 shrink-0 sm:size-24" />
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-bold sm:text-xl">Ағылшынша оқып, сөзді бірден түсініңіз</h2>
           <p className="mt-1 text-sm text-muted">
@@ -129,7 +129,9 @@ export function ContinueCard({ books }: { books: BookInfo[] }) {
 
   const percent = progressPercent(progress[current.slug]);
   return (
-    <section className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-lg shadow-black/8 ring-1 ring-black/5 sm:p-5">
+    <section className="relative flex items-center gap-4 rounded-3xl bg-white p-4 shadow-lg shadow-black/8 ring-1 ring-black/5 sm:p-5">
+      {/* Peeks out on the left, as in the Figma catalog. */}
+      <Mascot className="pointer-events-none absolute -left-[92px] -top-2 hidden size-24 xl:block" />
       <BookCover cover={current.cover} className="h-24 w-[72px] shrink-0 rounded-xl sm:h-[140px] sm:w-[110px]" />
       <div className="min-w-0 flex-1">
         <p className="text-sm text-muted">Оқуды жалғастыру</p>
@@ -212,7 +214,7 @@ export function Catalog({ books }: { books: BookInfo[] }) {
         </div>
       ) : (
         <div className="mt-10 flex flex-col items-center gap-3 py-8 text-center">
-          <Mascot className="size-20" />
+          <Mascot pose="empty-state" className="size-28" />
           <p className="font-semibold">{query ? "Ештеңе табылмады" : "Бұл деңгейде әзірге кітап жоқ"}</p>
         </div>
       )}

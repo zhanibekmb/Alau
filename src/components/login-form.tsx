@@ -65,7 +65,7 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
 
   return (
     <div className="mx-auto flex w-full max-w-[420px] flex-col px-4 pb-10 pt-8 md:pt-16">
-      <Mascot className="size-16" />
+      <Mascot className="size-20" />
       <h1 className="mt-4 text-3xl font-bold">{text.title}</h1>
       <p className="mt-1 text-muted">{text.lead}</p>
 

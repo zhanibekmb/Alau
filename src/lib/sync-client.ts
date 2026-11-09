@@ -61,7 +61,9 @@ let queuedRun: { pull: boolean } | null = null;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function queue(op: SyncOp) {
-  writeOutbox([...readOutbox(), op]);
+  // Reading time arrives every few seconds; only the latest total for a day needs sending.
+  const outbox = op.type === "day" ? readOutbox().filter((o) => !(o.type === "day" && o.day === op.day)) : readOutbox();
+  writeOutbox([...outbox, op]);
   clearTimeout(timer);
   timer = setTimeout(() => void run(false), FLUSH_DELAY_MS);
 }

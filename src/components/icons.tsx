@@ -63,6 +63,24 @@ export const PanelIcon = (p: Props) => (
 export const RepeatIcon = (p: Props) => (
   <Icon {...p}><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></Icon>
 );
+export const LogoutIcon = (p: Props) => (
+  <Icon {...p}><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /><path d="M9 8l-4 4 4 4" /><path d="M5 12h11" /></Icon>
+);
+export const SpeakerIcon = (p: Props) => (
+  <Icon {...p}><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></Icon>
+);
+export const CardsIcon = (p: Props) => (
+  <Icon {...p}><rect x="8" y="3" width="12" height="16" rx="2" /><path d="M16 21H6a2 2 0 0 1-2-2V7" /><path d="M14 8.5l-2 2.5 2 2.5 2-2.5z" /></Icon>
+);
+export const SortIcon = (p: Props) => (
+  <Icon {...p}><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></Icon>
+);
+export const FolderIcon = (p: Props) => (
+  <Icon {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M8 13h8" /></Icon>
+);
+export const PageIcon = (p: Props) => (
+  <Icon {...p}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /></Icon>
+);
 export const LockIcon = (p: Props) => (
   <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></Icon>
 );

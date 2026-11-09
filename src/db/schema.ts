@@ -131,6 +131,8 @@ export const readingDays = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     day: date("day", { mode: "string" }).notNull(),
+    /** Active reading time that day. Devices send totals, so the larger one is kept. */
+    seconds: integer("seconds").default(0).notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.day] })],
 );

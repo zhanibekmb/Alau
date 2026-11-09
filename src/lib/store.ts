@@ -13,7 +13,7 @@ import {
   type Settings,
 } from "./state";
 import { answer } from "./review";
-import { dayKey } from "./streak";
+import { MAX_DAY_SECONDS, dayKey } from "./streak";
 import { applyServerData, type ReaderData, type SyncOp } from "./sync";
 
 const KEY = "alau:v1";
@@ -100,11 +100,22 @@ export const recordProgress = (slug: string, progress: Progress) => {
     return {
       ...s,
       progress: { ...s.progress, [slug]: mergeProgress(s.progress[slug], progress) },
-      readingDays: newDay ? { ...s.readingDays, [day]: true } : s.readingDays,
+      readingDays: newDay ? { ...s.readingDays, [day]: 1 } : s.readingDays,
     };
   });
   syncSink?.({ type: "progress", slug, progress });
-  if (newDay) syncSink?.({ type: "day", day });
+  if (newDay) syncSink?.({ type: "day", day, seconds: 1 });
+};
+
+/** Active reading time from the reader (a few seconds at a time). */
+export const addReadingTime = (seconds: number) => {
+  const day = dayKey(new Date());
+  let total = 0;
+  update((s) => {
+    total = Math.min(MAX_DAY_SECONDS, (s.readingDays[day] ?? 0) + seconds);
+    return { ...s, readingDays: { ...s.readingDays, [day]: total } };
+  });
+  syncSink?.({ type: "day", day, seconds: total });
 };
 
 /** One answer in a word review session. */

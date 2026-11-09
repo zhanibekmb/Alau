@@ -10,10 +10,10 @@ import {
   type MouseEvent,
 } from "react";
 import { sentenceText } from "@/lib/text";
-import { recordProgress, saveWord, updateSettings, useAppState, useHydrated } from "@/lib/store";
+import { addReadingTime, recordProgress, saveWord, updateSettings, useAppState, useHydrated } from "@/lib/store";
 import type { BookInfo, ChapterFile, Gloss, Page } from "@/lib/types";
 import { Mascot } from "../brand";
-import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, MenuIcon, WordsIcon } from "../icons";
+import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, MenuIcon } from "../icons";
 import { viewUnlocksWork } from "@/lib/entitlement-view";
 import { useEntitlements } from "@/lib/use-entitlements";
 import { ChapterMenu, OriginalPanel, SettingsPanel } from "./panels";
@@ -56,6 +56,33 @@ function useChapter(slug: string, chapter: number | null) {
 
   const current = loaded?.key === key ? loaded : null;
   return { status: current?.status ?? "loading", file: current?.file, retry: () => setAttempt((a) => a + 1) };
+}
+
+const TICK_SECONDS = 15;
+/** Without a scroll, tap or key press for this long the reader is treated as away. */
+const IDLE_MS = 2 * 60 * 1000;
+
+/**
+ * Counts active reading time for the profile chart and the streak: every 15 seconds while the
+ * tab is visible and the reader did something in the last two minutes.
+ */
+function useReadingTimer(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    let lastActivity = Date.now();
+    const touch = () => {
+      lastActivity = Date.now();
+    };
+    const events = ["scroll", "pointerdown", "keydown", "touchstart", "wheel"] as const;
+    events.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible" && Date.now() - lastActivity < IDLE_MS) addReadingTime(TICK_SECONDS);
+    }, TICK_SECONDS * 1000);
+    return () => {
+      clearInterval(id);
+      events.forEach((e) => window.removeEventListener(e, touch));
+    };
+  }, [active]);
 }
 
 type Selection = {
@@ -144,6 +171,8 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
     }
   }, [book.slug, book.totalPages, page, isReady]);
 
+  useReadingTimer(isReady && !showFinish);
+
   const savedIds = new Set(Object.keys(words));
   const bookWordCount = Object.values(words).filter((w) => w.slug === book.slug).length;
 
@@ -217,7 +246,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           <button
             type="button"
             onClick={() => setPanel("chapters")}
-            className="flex h-[50px] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3.5 md:max-w-[490px] md:px-4"
+            className="flex h-[50px] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3.5 md:flex-initial md:max-w-[490px] md:px-4"
           >
             <MenuIcon className="size-5 shrink-0" />
             <span className="line-clamp-2 min-w-0 flex-1 text-left text-[13px] font-medium leading-[17px] md:line-clamp-1 md:text-base">
@@ -232,7 +261,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
             aria-label={`Сөздікке: ${bookWordCount} сөз`}
             className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 text-sm font-medium max-md:hidden"
           >
-            <WordsIcon className="size-5" />
+            <span aria-hidden="true">📔</span>
             Сөздікке:
             <span className="text-accent">{bookWordCount} сөз</span>
           </Link>
@@ -291,9 +320,9 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           </div>
         ) : !isReady || !pageData || !file || !chapterInfo ? (
           <div className="animate-pulse space-y-4 py-4" aria-label="Жүктелуде">
-            <div className="h-9 w-2/3 rounded-lg bg-[var(--r-line)]" />
+            <div className="h-9 w-2/3 rounded-lg bg-[var(--r-soft)]" />
             {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-5 rounded bg-[var(--r-line)]" />
+              <div key={i} className="h-5 rounded bg-[var(--r-soft)]" />
             ))}
           </div>
         ) : (
@@ -332,7 +361,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
               </div>
               <p className="text-center text-[var(--r-muted)]">
                 {page}
-                <span className="max-md:sr-only">/{book.totalPages} бет</span>
+                <span className="sr-only">/{book.totalPages} бет</span>
               </p>
               <button
                 type="button"
@@ -349,9 +378,10 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
 
       {isReady && !showFinish && (
         <>
-          <Mascot className="pointer-events-none fixed bottom-8 left-10 hidden size-20 xl:block" />
+          <Mascot pose="audio-book" className="pointer-events-none fixed bottom-6 left-8 hidden size-24 xl:block" />
           {hydrated && !settings.hintSeen && (
-            <div className="fixed inset-x-3 top-[76px] z-10 flex md:top-[100px] md:left-auto md:w-72 items-start gap-2 rounded-2xl border border-[var(--r-line)] bg-[var(--r-surface)] p-3 shadow-lg xl:inset-x-auto xl:bottom-28 xl:left-10 xl:top-auto xl:w-64">
+            <div className="fixed inset-x-3 top-[76px] z-10 flex animate-card-in items-center gap-3 rounded-2xl border border-[var(--r-line)] bg-[var(--r-panel)] p-3 shadow-lg md:left-auto md:top-[100px] md:w-80 xl:inset-x-auto xl:bottom-32 xl:left-8 xl:top-auto xl:w-72">
+              <Mascot pose="reader-tooltip" className="size-14 shrink-0" />
               <p className="flex-1 text-sm">Кез келген сөзді басыңыз, аудармасы бірден шығады.</p>
               <button type="button" onClick={() => updateSettings({ hintSeen: true })} aria-label="Жабу" className="-m-1 p-1">
                 <CloseIcon className="size-5" />
@@ -411,7 +441,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
 export function Unavailable() {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center" role="alert">
-      <Mascot className="size-24" />
+      <Mascot pose="empty-state" className="size-28" />
       <p className="text-xl font-semibold">Кітап қолжетімсіз</p>
       <p className="opacity-70">Бұл кітап қазір оқуға ашық емес.</p>
       <Link href="/" className="mt-2 rounded-xl bg-accent px-5 py-3 font-medium text-on-accent">
@@ -424,7 +454,7 @@ export function Unavailable() {
 function FinishScreen({ book, wordCount, onRestart }: { book: BookInfo; wordCount: number; onRestart: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center">
-      <Mascot className="size-28" />
+      <Mascot pose="level-up" className="size-32 animate-pop" />
       <h1 className="text-3xl font-bold">Құттықтаймыз!</h1>
       <p className="text-[var(--r-muted)]">
         Сіз «{book.title}» кітабын оқып бітірдіңіз. Сөздікте осы кітаптан {wordCount} сөз бар.

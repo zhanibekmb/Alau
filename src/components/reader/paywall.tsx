@@ -107,7 +107,7 @@ export function Paywall({
   if (interestSaved) {
     return (
       <section className="flex flex-col items-center gap-3 py-12 text-center" aria-live="polite">
-        <Mascot className="size-20" />
+        <Mascot pose="subscription" className="size-24" />
         <h2 className="text-2xl font-bold">Рақмет!</h2>
         <p className="max-w-sm text-[var(--r-muted)]">
           Таңдауыңызды сақтадық. Төлем жақында ашылады, сонда осы кітапты бірден жалғастыра аласыз.
@@ -124,7 +124,7 @@ export function Paywall({
   return (
     <section className="py-6 md:py-10" aria-labelledby="paywall-title">
       <div className="flex flex-col items-center text-center">
-        <Mascot className="size-16" />
+        <Mascot pose="subscription" className="size-20" />
         <h2 id="paywall-title" className="mt-3 text-2xl font-bold md:text-3xl">
           Тегін бөлім осы жерде аяқталды
         </h2>
@@ -143,7 +143,7 @@ export function Paywall({
               role="radio"
               aria-checked={active}
               onClick={() => setSelected(option.kind)}
-              className={`relative flex items-center gap-3 rounded-2xl border-2 bg-[var(--r-surface)] p-4 text-left transition-colors ${
+              className={`relative flex items-center gap-3 rounded-2xl border-2 bg-[var(--r-panel)] p-4 text-left transition-colors ${
                 active ? "border-accent" : "border-[var(--r-line)]"
               }`}
             >

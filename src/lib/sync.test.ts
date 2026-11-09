@@ -80,13 +80,13 @@ describe("opsFromState", () => {
     const ops = opsFromState({
       progress: { s: progress(2) },
       words: { a: word("a") },
-      readingDays: { "2026-11-09": true },
+      readingDays: { "2026-11-09": 300 },
       reviews: { a: review, gone: review },
     });
     expect(ops).toEqual([
       { type: "progress", slug: "s", progress: progress(2) },
       { type: "word", word: word("a") },
-      { type: "day", day: "2026-11-09" },
+      { type: "day", day: "2026-11-09", seconds: 300 },
       { type: "review", id: "a", review },
     ]);
     expect(opsFromState({ progress: {}, words: {}, readingDays: {}, reviews: {} })).toEqual([]);
@@ -123,8 +123,9 @@ describe("streak days and reviews in the sync", () => {
   it("accepts a day and a review, refuses bad ones", () => {
     const parsed = parseSyncRequest({
       ops: [
-        { type: "day", day: "2026-11-09" },
-        { type: "day", day: "9 Nov" },
+        { type: "day", day: "2026-11-09", seconds: 60 },
+        { type: "day", day: "9 Nov", seconds: 60 },
+        { type: "day", day: "2026-11-09", seconds: -5 },
         { type: "review", id: "a", review: { box: 3, due: 10, reviewedAt: 9 } },
         { type: "review", id: "a", review: { box: 9, due: 10, reviewedAt: 9 } },
       ],
@@ -133,21 +134,21 @@ describe("streak days and reviews in the sync", () => {
   });
 
   it("keeps the later review and unions reading days", () => {
-    const local = { ...INITIAL_STATE, words: { a: word("a") }, readingDays: { "2026-11-01": true as const } };
+    const local = { ...INITIAL_STATE, words: { a: word("a") }, readingDays: { "2026-11-01": 60, "2026-11-02": 900 } };
     const server = {
       progress: {},
       words: { a: word("a"), b: word("b") },
-      readingDays: { "2026-11-02": true as const },
+      readingDays: { "2026-11-02": 300 },
       reviews: { a: { box: 1, due: 1, reviewedAt: 100 }, b: { box: 2, due: 1, reviewedAt: 100 } },
     };
     const next = applyServerData(local, server, [
       { type: "review", id: "a", review: { box: 3, due: 9, reviewedAt: 200 } },
       { type: "review", id: "b", review: { box: 0, due: 9, reviewedAt: 50 } },
-      { type: "day", day: "2026-11-03" },
+      { type: "day", day: "2026-11-03", seconds: 120 },
     ]);
     expect(next.reviews.a.box).toBe(3);
     expect(next.reviews.b.box).toBe(2);
-    expect(Object.keys(next.readingDays).sort()).toEqual(["2026-11-01", "2026-11-02", "2026-11-03"]);
+    expect(next.readingDays).toEqual({ "2026-11-01": 60, "2026-11-02": 900, "2026-11-03": 120 });
   });
 
   it("drops a removed word's review", () => {

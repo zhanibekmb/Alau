@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { speak } from "@/lib/speak";
 import { recordReview, useAppState } from "@/lib/store";
 import { POS_LABELS } from "@/lib/types";
 import { Mascot } from "./brand";
-import { CloseIcon } from "./icons";
+import { CloseIcon, SpeakerIcon } from "./icons";
 
 // Word review session ("Сөздерді қайталау"). Rules: src/lib/review.ts.
 //
@@ -14,7 +15,7 @@ import { CloseIcon } from "./icons";
 // Keys: Space shows the translation, 1 = «Есімде жоқ», 2 = «Білемін», Esc closes.
 
 export function WordReview({ initialQueue, onClose }: { initialQueue: string[]; onClose: () => void }) {
-  const { words } = useAppState();
+  const { words, settings } = useAppState();
   const [queue, setQueue] = useState(initialQueue);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -84,9 +85,20 @@ export function WordReview({ initialQueue, onClose }: { initialQueue: string[]; 
           <div key={`${word.id}-${index}`} className="mt-6 flex animate-card-in flex-col">
             <div className="flex min-h-[260px] flex-col items-center justify-center rounded-3xl bg-sidebar px-5 py-8 text-center">
               <p className="text-sm text-muted">{POS_LABELS[word.pos] ?? word.pos}</p>
-              <p className="mt-2 text-4xl font-bold" lang="en">
-                {word.lemma}
-              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <p className="text-4xl font-bold" lang="en">
+                  {word.lemma}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => speak(word.lemma, settings.accent)}
+                  aria-label="Тыңдау"
+                  title="Тыңдау"
+                  className="flex size-10 items-center justify-center rounded-xl bg-accent text-white transition-transform hover:scale-105 active:scale-95"
+                >
+                  <SpeakerIcon className="size-5" />
+                </button>
+              </div>
               {word.ipa && <p className="mt-1 text-muted">[{word.ipa}]</p>}
               <p className="mt-5 max-w-sm font-serif leading-relaxed text-ink/80" lang="en">
                 «{word.sentence}»
@@ -136,7 +148,7 @@ export function WordReview({ initialQueue, onClose }: { initialQueue: string[]; 
           </div>
         ) : (
           <div className="mt-6 flex animate-card-in flex-col items-center py-6 text-center">
-            <Mascot className="size-24 animate-pop" />
+            <Mascot pose="mastered" className="size-28 animate-pop" />
             <h2 className="mt-4 text-2xl font-bold">Жарайсыз!</h2>
             <p className="mt-1 text-muted">Бүгінгі қайталау аяқталды.</p>
             <dl className="mt-5 grid w-full max-w-xs grid-cols-2 gap-3">

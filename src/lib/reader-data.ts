@@ -9,7 +9,7 @@ import { foldOps, type ReaderData, type SyncRequest } from "./sync";
 //   lock this reader ─▶ progress: mergeProgress(server row, queued) ─▶ upsert
 //                    ─▶ words: removed → delete, saved → insert (an existing row wins, like addWord)
 //                    ─▶ reviews: the later answer (reviewed_at) wins
-//                    ─▶ reading days: union
+//                    ─▶ reading days: the larger total of seconds per day
 //                    ─▶ anonId? → earlier guest paywall events get this user_id (E1B)
 //   pull? ─▶ the reader's whole data back
 
@@ -84,9 +84,15 @@ export async function syncReaderData(db: Database, userId: string, request: Sync
         );
     }
 
-    const days = Object.keys(folded.days);
+    const days = Object.entries(folded.days);
     for (const part of chunks(days)) {
-      await tx.insert(readingDays).values(part.map((day) => ({ userId, day }))).onConflictDoNothing();
+      await tx
+        .insert(readingDays)
+        .values(part.map(([day, seconds]) => ({ userId, day, seconds })))
+        .onConflictDoUpdate({
+          target: [readingDays.userId, readingDays.day],
+          set: { seconds: sql`greatest(${readingDays.seconds}, excluded.seconds)` },
+        });
     }
 
     if (request.anonId) {
@@ -104,10 +110,10 @@ export async function loadReaderData(db: Database, userId: string): Promise<Read
   const [progressRows, wordRows, dayRows] = await Promise.all([
     db.select().from(readingProgress).where(eq(readingProgress.userId, userId)),
     db.select().from(savedWords).where(eq(savedWords.userId, userId)),
-    db.select({ day: readingDays.day }).from(readingDays).where(eq(readingDays.userId, userId)),
+    db.select({ day: readingDays.day, seconds: readingDays.seconds }).from(readingDays).where(eq(readingDays.userId, userId)),
   ]);
   return {
-    readingDays: Object.fromEntries(dayRows.map((row) => [row.day, true as const])),
+    readingDays: Object.fromEntries(dayRows.map((row) => [row.day, row.seconds])),
     reviews: Object.fromEntries(
       wordRows
         .filter((row) => row.reviewedAt && row.reviewDue)

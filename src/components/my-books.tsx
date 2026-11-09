@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useAppState } from "@/lib/store";
+import { useAppState, useHydrated } from "@/lib/store";
 import { progressPercent, type AppState } from "@/lib/state";
 import { levelLabel, type BookInfo } from "@/lib/types";
 import { BookCard, BookCover } from "./book-card";
 import { Mascot } from "./brand";
-import { Chip, ChipRow, PhoneHeader, SearchField } from "./catalog";
+import { CatalogSkeleton, Chip, ChipRow, PhoneHeader, SearchField } from "./catalog";
 import { StreakChip } from "./streak";
 
 type Tab = "all" | "reading" | "saved" | "finished";
@@ -31,6 +31,7 @@ const EMPTY: Record<Tab, string> = {
 
 export function MyBooks({ books }: { books: BookInfo[] }) {
   const state = useAppState();
+  const hydrated = useHydrated();
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
   const groups = groupBooks(books, state);
@@ -49,38 +50,46 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
     { id: "finished", label: `Оқып біткендер (${groups.finished.length})` },
   ];
 
+  // Before stored data loads, an empty shelf would flash for a moment.
+  if (!hydrated) return <CatalogSkeleton />;
+
   return (
     <div className="mx-auto w-full max-w-[913px] px-5 pb-10 pt-4 md:px-8 md:pt-14">
       <PhoneHeader title="Менің кітаптарым">Оқып жатқан, ұнатқан және аяқтаған кітаптарыңыздың жеке сөресі</PhoneHeader>
-      <h1 className="text-4xl font-bold max-md:hidden">Менің кітаптарым</h1>
-
-      <ul className="-mx-5 mt-[15px] flex gap-2.5 overflow-x-auto px-5 text-[15px] font-medium whitespace-nowrap [scrollbar-width:none] md:hidden">
-        <StreakChip className="shrink-0" />
-        <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5">
-          <span aria-hidden="true">✅</span>
-          {groups.finished.length} кітап
-        </li>
-        <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5">
-          <span aria-hidden="true">🧠</span>+{Object.keys(state.words).length} сөз
-        </li>
-      </ul>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-4xl font-bold max-md:hidden">Менің кітаптарым</h1>
+        {/* Phone: outlined pills under the title. Desktop: filled pills beside it (Figma, MyBooks). */}
+        <ul className="-mx-5 mt-[15px] flex gap-2.5 overflow-x-auto px-5 text-[15px] font-medium whitespace-nowrap [scrollbar-width:none] max-md:w-[calc(100%+2.5rem)] md:mx-0 md:mt-0 md:px-0 md:text-lg">
+          <StreakChip className="shrink-0 md:rounded-xl" />
+          <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5 md:rounded-xl md:border-0 md:bg-[#9ee89c] md:text-white">
+            <span aria-hidden="true">✅</span>
+            {groups.finished.length} кітап
+          </li>
+          <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5 md:hidden">
+            <span aria-hidden="true">🧠</span>+{Object.keys(state.words).length} сөз
+          </li>
+        </ul>
+      </div>
 
       {current && (
         <>
           <ContinueBlock book={current} state={state} />
-          <section className="mt-6 flex items-center gap-4 rounded-3xl bg-sidebar p-5 max-md:hidden">
-            <BookCover cover={current.cover} className="h-[140px] w-[105px] shrink-0 rounded-xl" />
+          <section className="mt-8 flex items-center gap-5 rounded-3xl bg-white p-5 shadow-lg shadow-black/8 ring-1 ring-black/5 max-md:hidden">
+            <BookCover cover={current.cover} className="h-[160px] w-[120px] shrink-0 rounded-2xl" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-muted">Қазір оқылуда</p>
-              <h2 className="mt-1 text-xl font-semibold">{current.title}</h2>
-              <p className="mt-1 text-sm text-muted">{whereAt(current, state)}</p>
-              <Link
-                href={`/read/${current.slug}`}
-                className="mt-3 inline-block rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent"
-              >
-                Жалғастыру
-              </Link>
+              <p className="text-muted">Қазір оқылуда</p>
+              <h2 className="mt-2 max-w-sm text-xl font-semibold leading-snug">{current.title}</h2>
+              <div className="mt-3 h-2 max-w-[300px] overflow-hidden rounded-full bg-chip">
+                <div className="h-full rounded-full bg-ink" style={{ width: `${progressPercent(state.progress[current.slug])}%` }} />
+              </div>
+              <p className="mt-1.5">{whereAt(current, state)}</p>
             </div>
+            <Link
+              href={`/read/${current.slug}`}
+              className="shrink-0 rounded-2xl bg-accent px-5 py-3 text-xl font-medium text-white shadow-md shadow-accent/30"
+            >
+              Жалғастыру
+            </Link>
           </section>
         </>
       )}
@@ -120,7 +129,7 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
         </div>
       ) : (
         <div className="mt-10 flex flex-col items-center gap-3 py-8 text-center">
-          <Mascot className="size-20" />
+          <Mascot pose="empty-state" className="size-28" />
           <p className="font-semibold">{q ? "Ештеңе табылмады" : EMPTY[tab]}</p>
           {!q && (
             <Link href="/" className="rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent">

@@ -1,0 +1,1 @@
+ALTER TABLE "reading_days" ADD COLUMN "seconds" integer DEFAULT 0 NOT NULL;

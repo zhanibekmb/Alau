@@ -125,15 +125,18 @@ describe("streak days and word reviews", () => {
     await sync("u1", [
       { type: "word", word: word("a") },
       { type: "review", id: "a", review: { box: 2, due: 3000, reviewedAt: 2000 } },
-      { type: "day", day: "2026-11-08" },
-      { type: "day", day: "2026-11-09" },
+      { type: "day", day: "2026-11-08", seconds: 600 },
+      { type: "day", day: "2026-11-09", seconds: 300 },
     ]);
     const data = await sync("u1", [
-      { type: "day", day: "2026-11-09" },
+      // Another device read less today: the larger total stays.
+      { type: "day", day: "2026-11-09", seconds: 120 },
       // An older answer from another device does not overwrite the newer one.
       { type: "review", id: "a", review: { box: 0, due: 1000, reviewedAt: 1000 } },
     ]);
-    expect(Object.keys(data?.readingDays ?? {}).sort()).toEqual(["2026-11-08", "2026-11-09"]);
+    expect(data?.readingDays).toEqual({ "2026-11-08": 600, "2026-11-09": 300 });
+    const more = await sync("u1", [{ type: "day", day: "2026-11-09", seconds: 900 }]);
+    expect(more?.readingDays["2026-11-09"]).toBe(900);
     expect(data?.reviews.a).toEqual({ box: 2, due: 3000, reviewedAt: 2000 });
   });
 

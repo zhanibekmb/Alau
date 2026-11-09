@@ -7,7 +7,6 @@ import { updateSettings, useAppState, useHydrated } from "@/lib/store";
 import { AccountBadge } from "./account";
 import { Flame, Logo } from "./brand";
 import { BookOpenIcon, HomeIcon, PanelIcon, UserIcon, WordsIcon } from "./icons";
-import { StreakWidget } from "./streak";
 import { Tooltip } from "./tooltip";
 
 const LINKS = [
@@ -53,7 +52,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav className="mt-16 flex flex-col gap-2 collapsed:mt-10" aria-label="Негізгі мәзір">
+        <nav className="mt-20 flex flex-col gap-1.5 collapsed:mt-10" aria-label="Негізгі мәзір">
           {LINKS.map(({ href, label, Icon }) => {
             const active = isActive(pathname, href);
             return (
@@ -62,10 +61,10 @@ export function Sidebar() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={`group relative flex h-[50px] items-center gap-3 rounded-2xl px-3.5 font-medium transition-colors collapsed:justify-center collapsed:px-0 ${
-                  active ? "bg-accent text-on-accent shadow-md shadow-accent/30" : "hover:bg-chip"
+                  active ? "bg-accent text-white shadow-md shadow-accent/30" : "hover:bg-chip"
                 }`}
               >
-                <Icon className="size-6 shrink-0" />
+                <Icon className={`size-6 shrink-0 ${active ? "" : "text-muted/70"}`} />
                 <span className="truncate collapsed:sr-only">{label}</span>
                 <Tooltip>{label}</Tooltip>
               </Link>
@@ -73,11 +72,8 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-3">
-          <StreakWidget />
-          <div className="border-t border-line pt-3">
-            <AccountBadge />
-          </div>
+        <div className="mt-auto border-t border-line pt-4">
+          <AccountBadge />
         </div>
       </aside>
 

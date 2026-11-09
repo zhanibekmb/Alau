@@ -1,6 +1,6 @@
 import { addWord, mergeProgress, type AppState, type Progress, type Review, type SavedWord } from "./state";
 import { MAX_BOX } from "./review";
-import { DAY_KEY } from "./streak";
+import { DAY_KEY, MAX_DAY_SECONDS } from "./streak";
 
 // Reader data sync between the browser and the server (docs/paywall-plan.md, E2A and E2B).
 // Pure rules shared by both sides. The browser queues every change as an op and sends the
@@ -16,8 +16,8 @@ export type SyncOp =
   | { type: "progress"; slug: string; progress: Progress }
   | { type: "word"; word: SavedWord }
   | { type: "unword"; id: string }
-  /** A local date with at least one page read (the streak). */
-  | { type: "day"; day: string }
+  /** Seconds read on a local date so far (the streak and the weekly chart). The larger total wins. */
+  | { type: "day"; day: string; seconds: number }
   | { type: "review"; id: string; review: Review };
 
 /** anonId is sent once, at the first sign-in on this browser, to link the guest's paywall events (E1B). */
@@ -82,7 +82,9 @@ function parseOp(value: unknown): SyncOp | null {
     return word && { type: "word", word };
   }
   if (op.type === "unword" && isText(op.id, 200) && op.id.length > 0) return { type: "unword", id: op.id };
-  if (op.type === "day" && typeof op.day === "string" && DAY_KEY.test(op.day)) return { type: "day", day: op.day };
+  if (op.type === "day" && typeof op.day === "string" && DAY_KEY.test(op.day) && isInt(op.seconds, 0, MAX_DAY_SECONDS)) {
+    return { type: "day", day: op.day, seconds: op.seconds };
+  }
   if (op.type === "review" && isText(op.id, 200) && op.id.length > 0) {
     const review = parseReview(op.review);
     return review && { type: "review", id: op.id, review };
@@ -118,7 +120,7 @@ export function opsFromState(data: ReaderData): SyncOp[] {
   return [
     ...Object.entries(data.progress).map(([slug, progress]): SyncOp => ({ type: "progress", slug, progress })),
     ...Object.values(data.words).map((word): SyncOp => ({ type: "word", word })),
-    ...Object.keys(data.readingDays).map((day): SyncOp => ({ type: "day", day })),
+    ...Object.entries(data.readingDays).map(([day, seconds]): SyncOp => ({ type: "day", day, seconds })),
     ...Object.entries(data.reviews)
       .filter(([id]) => data.words[id])
       .map(([id, review]): SyncOp => ({ type: "review", id, review })),
@@ -132,7 +134,7 @@ export function opsFromState(data: ReaderData): SyncOp[] {
 export type Folded = {
   progress: Record<string, Progress>;
   words: Record<string, SavedWord | null>;
-  days: Record<string, true>;
+  days: Record<string, number>;
   /** The latest review per word (by reviewedAt). */
   reviews: Record<string, Review>;
 };
@@ -144,7 +146,7 @@ export function laterReview(a: Review | undefined, b: Review): Review {
 export function foldOps(ops: SyncOp[]): Folded {
   const progress: Record<string, Progress> = {};
   const words: Record<string, SavedWord | null> = {};
-  const days: Record<string, true> = {};
+  const days: Record<string, number> = {};
   const reviews: Record<string, Review> = {};
   for (const op of ops) {
     if (op.type === "progress") {
@@ -156,7 +158,7 @@ export function foldOps(ops: SyncOp[]): Folded {
       words[op.id] = null;
       delete reviews[op.id];
     } else if (op.type === "day") {
-      days[op.day] = true;
+      days[op.day] = Math.max(days[op.day] ?? 0, op.seconds);
     } else {
       reviews[op.id] = laterReview(reviews[op.id], op.review);
     }
@@ -175,10 +177,12 @@ export function applyServerData(local: AppState, server: ReaderData, pending: Sy
 
   let words = { ...server.words };
   const reviews = { ...server.reviews };
-  // Reading days are never removed, so the local ones are kept too.
-  const readingDays = { ...local.readingDays, ...server.readingDays };
+  // Reading time only grows, so for each day the largest total from any side wins.
+  const readingDays = { ...local.readingDays };
   const queued = foldOps(pending);
-  Object.assign(readingDays, queued.days);
+  for (const source of [server.readingDays, queued.days]) {
+    for (const [day, seconds] of Object.entries(source)) readingDays[day] = Math.max(readingDays[day] ?? 0, seconds);
+  }
   for (const [id, review] of Object.entries(queued.reviews)) reviews[id] = laterReview(reviews[id], review);
   for (const [slug, p] of Object.entries(queued.progress)) progress[slug] = mergeProgress(progress[slug], p);
   for (const [id, word] of Object.entries(queued.words)) {

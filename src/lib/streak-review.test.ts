@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { INTERVAL_DAYS, answer, dueWords, isDue, learnedCount } from "./review";
 import type { SavedWord } from "./state";
-import { dayKey, lastWeek, streakOf } from "./streak";
+import { dayKey, formatDuration, minutesToday, streakOf, thisWeek, totalSeconds } from "./streak";
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h);
-const days = (...keys: string[]) => Object.fromEntries(keys.map((k) => [k, true as const]));
+const days = (...keys: string[]) => Object.fromEntries(keys.map((k) => [k, 120]));
 
 describe("streak", () => {
   const now = at(2026, 11, 9);
@@ -31,11 +31,26 @@ describe("streak", () => {
     expect(streakOf(days("2026-12-31", "2027-01-01"), at(2027, 1, 1)).current).toBe(2);
   });
 
-  it("shows the last seven days, today last", () => {
-    const week = lastWeek(days("2026-11-08"), now);
-    expect(week.map((d) => d.label)).toEqual(["Сс", "Ср", "Бс", "Жм", "Сб", "Жс", "Дс"]);
-    expect(week.map((d) => d.read)).toEqual([false, false, false, false, false, true, false]);
-    expect(week[6].today).toBe(true);
+  it("does not count a day with no time", () => {
+    expect(streakOf({ "2026-11-09": 0, "2026-11-08": 60 }, now)).toEqual({ current: 1, readToday: false, best: 1 });
+  });
+
+  it("shows this week from Monday with minutes per day", () => {
+    // 2026-11-11 is a Wednesday.
+    const week = thisWeek({ "2026-11-09": 22 * 60 + 30, "2026-11-11": 300 }, at(2026, 11, 11));
+    expect(week.map((d) => d.label)).toEqual(["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"]);
+    expect(week.map((d) => d.minutes)).toEqual([22, 0, 5, 0, 0, 0, 0]);
+    expect(week[2].today).toBe(true);
+    expect(week.map((d) => d.future)).toEqual([false, false, false, true, true, true, true]);
+  });
+
+  it("adds up and formats reading time", () => {
+    const d = { "2026-11-09": 1500, "2026-11-08": 11100 };
+    expect(minutesToday(d, now)).toBe(25);
+    expect(totalSeconds(d)).toBe(12600);
+    expect(formatDuration(12600)).toBe("3.5 сағ");
+    expect(formatDuration(45 * 60)).toBe("45 мин");
+    expect(formatDuration(13 * 3600)).toBe("13 сағ");
   });
 });
 

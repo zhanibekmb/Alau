@@ -22,6 +22,10 @@ export type ReaderTheme = (typeof READER_THEMES)[number];
 export const READER_FONTS = ["serif", "sans", "lora"] as const;
 export type ReaderFont = (typeof READER_FONTS)[number];
 export const MIN_FONT_SIZE = 16;
+/** Daily reading goal choices, in minutes (profile, "Күнделікті оқу мақсаты"). */
+export const DAILY_GOALS = [5, 10, 15, 20, 30, 45, 60] as const;
+export const ACCENTS = ["us", "gb"] as const;
+export type Accent = (typeof ACCENTS)[number];
 export const MAX_FONT_SIZE = 26;
 
 export type Settings = {
@@ -32,6 +36,10 @@ export type Settings = {
   hintSeen: boolean;
   /** Desktop sidebar shows icons only. */
   sidebarCollapsed: boolean;
+  /** Minutes a day; the weekly chart and the profile goal use it. */
+  dailyGoal: number;
+  /** English voice for pronouncing words. */
+  accent: Accent;
 };
 
 /** Spaced-repetition state of one saved word (Leitner boxes, src/lib/review.ts). */
@@ -41,8 +49,8 @@ export type AppState = {
   progress: Record<string, Progress>;
   savedBooks: Record<string, number>;
   words: Record<string, SavedWord>;
-  /** Local dates ("2026-11-09") on which the reader read at least one page: the streak. */
-  readingDays: Record<string, true>;
+  /** Seconds of reading per local date ("2026-11-09"). Any day above 0 counts for the streak. */
+  readingDays: Record<string, number>;
   /** Keyed by word id. A saved word without an entry has never been reviewed. */
   reviews: Record<string, Review>;
   settings: Settings;
@@ -54,7 +62,7 @@ export const INITIAL_STATE: AppState = {
   words: {},
   readingDays: {},
   reviews: {},
-  settings: { theme: "paper", font: "serif", fontSize: 20, level: null, hintSeen: false, sidebarCollapsed: false },
+  settings: { theme: "paper", font: "serif", fontSize: 20, level: null, hintSeen: false, sidebarCollapsed: false, dailyGoal: 20, accent: "us" },
 };
 
 /** Progress never moves back, so an old tab cannot overwrite a newer one. */
@@ -89,7 +97,7 @@ export function parseStoredState(raw: string | null): AppState {
       progress: data.progress ?? {},
       savedBooks: data.savedBooks ?? {},
       words: data.words ?? {},
-      readingDays: data.readingDays ?? {},
+      readingDays: parseReadingDays(data.readingDays),
       reviews: data.reviews ?? {},
       settings: {
         ...INITIAL_STATE.settings,
@@ -102,9 +110,22 @@ export function parseStoredState(raw: string | null): AppState {
           : "serif",
         level: LEVELS.includes(settings.level as Level) ? (settings.level as Level) : null,
         sidebarCollapsed: settings.sidebarCollapsed === true,
+        dailyGoal: DAILY_GOALS.includes(settings.dailyGoal as (typeof DAILY_GOALS)[number]) ? settings.dailyGoal! : 20,
+        accent: ACCENTS.includes(settings.accent as Accent) ? (settings.accent as Accent) : "us",
       },
     };
   } catch {
     return INITIAL_STATE;
   }
+}
+
+/** Older versions stored `true` for a reading day; it counts as one minute. */
+function parseReadingDays(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== "object") return {};
+  const days: Record<string, number> = {};
+  for (const [day, value] of Object.entries(raw)) {
+    if (value === true) days[day] = 60;
+    else if (typeof value === "number" && Number.isFinite(value) && value > 0) days[day] = Math.floor(value);
+  }
+  return days;
 }

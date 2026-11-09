@@ -64,7 +64,7 @@ export function WordPopover({
       role="dialog"
       aria-label={`${gloss.lemma}: аудармасы`}
       style={{ left: place.left, top: place.top, width: WIDTH }}
-      className="fixed z-40 rounded-2xl border border-[var(--r-line)] bg-[var(--r-surface)] p-4 shadow-xl max-sm:inset-x-0! max-sm:top-auto! max-sm:bottom-0! max-sm:w-full! max-sm:rounded-b-none max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="fixed z-40 rounded-2xl border border-[var(--r-line)] bg-[var(--r-panel)] p-4 shadow-xl max-sm:inset-x-0! max-sm:top-auto! max-sm:bottom-0! max-sm:w-full! max-sm:rounded-b-none max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

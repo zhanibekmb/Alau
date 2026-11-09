@@ -15,6 +15,13 @@
       "when": 1794221879306,
       "tag": "0001_streak_and_review",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794240714017,
+      "tag": "0002_reading_seconds",
+      "breakpoints": true
     }
   ]
 }

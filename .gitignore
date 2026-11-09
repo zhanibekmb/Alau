@@ -44,3 +44,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# Figma exports used as a visual reference (mascots are copied, compressed, into public/mascots)
+/design/
