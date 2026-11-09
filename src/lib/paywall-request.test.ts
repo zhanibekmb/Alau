@@ -26,6 +26,7 @@ describe("findPaidWork", () => {
   it("lists every level of a story and its price", () => {
     expect(findPaidWork("secret-of-lake-bakaly")).toEqual({
       work: "secret-of-lake-bakaly",
+      title: "The Secret of Lake Bakaly",
       priceTenge: 490,
       slugs: ["secret-of-lake-bakaly-a1", "secret-of-lake-bakaly-a2", "secret-of-lake-bakaly-b1", "secret-of-lake-bakaly-b2"],
     });

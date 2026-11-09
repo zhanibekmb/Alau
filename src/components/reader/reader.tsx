@@ -14,7 +14,10 @@ import { recordProgress, saveWord, updateSettings, useAppState, useHydrated } fr
 import type { BookInfo, ChapterFile, Gloss, Page } from "@/lib/types";
 import { Mascot } from "../brand";
 import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, MenuIcon, WordsIcon } from "../icons";
+import { viewUnlocksWork } from "@/lib/entitlement-view";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { ChapterMenu, OriginalPanel, SettingsPanel } from "./panels";
+import { Paywall } from "./paywall";
 import { WordPopover, placePopover, type PopoverPlace } from "./word-popover";
 
 const FONT_FAMILY = { serif: "var(--ff-pt-serif)", sans: "var(--ff-inter)", lora: "var(--ff-lora)" };
@@ -128,6 +131,10 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
     page === null ? null : (book.chapters.find((c) => page >= c.firstPage && page <= c.lastPage) ?? book.chapters[0]);
 
   const { status, file, retry } = useChapter(book.slug, chapterInfo?.n ?? null);
+  const { entitlements, reload: reloadEntitlements } = useEntitlements();
+  const ownsWork = viewUnlocksWork(entitlements, book.work, new Date());
+  /** Lock icons in the menu only; the server decides real access. */
+  const isLocked = (n: number) => Boolean(book.paywall) && n > (book.paywall?.freeChapters ?? 0) && !ownsWork;
   const pageData = file?.pages.find((p) => p.number === page);
   const isReady = status === "ready" && Boolean(pageData);
 
@@ -263,7 +270,15 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
             }}
           />
         ) : status === "login" || status === "paywall" ? (
-          <LockedChapter book={book} needsLogin={status === "login"} />
+          <Paywall
+            book={book}
+            chapter={chapterInfo?.n ?? 1}
+            needsLogin={status === "login"}
+            onUnlocked={() => {
+              reloadEntitlements();
+              retry();
+            }}
+          />
         ) : status === "gone" ? (
           <Unavailable />
         ) : status === "error" ? (
@@ -360,6 +375,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         <ChapterMenu
           book={book}
           currentChapter={chapterInfo?.n ?? 1}
+          isLocked={isLocked}
           onClose={() => setPanel(null)}
           onPick={(firstPage) => {
             setPanel(null);
@@ -376,29 +392,6 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           paragraphs={file.original}
           onClose={() => setPanel(null)}
         />
-      )}
-    </div>
-  );
-}
-
-/** Placeholder until the full paywall (T6): explains why the chapter is closed. */
-function LockedChapter({ book, needsLogin }: { book: BookInfo; needsLogin: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center" role="alert">
-      <Mascot className="size-24" />
-      <p className="text-xl font-semibold">Бұл тарау ақылы</p>
-      <p className="text-[var(--r-muted)]">
-        {needsLogin
-          ? "Оқуды жалғастыру үшін аккаунтқа кіріңіз."
-          : `Тегін бөлім осы жерде аяқталды. Кітаптың бағасы: ${book.paywall?.priceTenge ?? ""} ₸.`}
-      </p>
-      {needsLogin && (
-        <Link
-          href={`/login?mode=sign-up&next=${encodeURIComponent(`/read/${book.slug}`)}`}
-          className="mt-2 rounded-xl bg-accent px-5 py-3 font-medium text-on-accent"
-        >
-          Кіру немесе тіркелу
-        </Link>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { clearAllData, updateSettings, useAppState } from "@/lib/store";
 import { LEVELS } from "@/lib/types";
-import { AccountCard } from "./account";
+import { AccountCard, TariffCard } from "./account";
 
 export function Profile() {
   const { progress, words, settings } = useAppState();
@@ -18,6 +18,7 @@ export function Profile() {
       <h1 className="text-3xl font-bold md:text-4xl">Профиль</h1>
 
       <AccountCard />
+      <TariffCard />
 
       <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
         {stats.map(({ value, label }) => (

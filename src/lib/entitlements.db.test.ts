@@ -3,7 +3,7 @@ import type { Database } from "../db";
 import { entitlements, user } from "../db/schema";
 import { createTestDb, resetDb } from "../db/test-db";
 import { canReadChapter } from "./access";
-import { loadEntitlements } from "./entitlements";
+import { listReaderEntitlements, loadEntitlements } from "./entitlements";
 
 let db: Database;
 
@@ -19,6 +19,21 @@ beforeEach(async () => {
 });
 afterAll(async () => {
   await db.$client.end();
+});
+
+describe("listReaderEntitlements", () => {
+  it("lists this reader's purchases oldest first, with their source", async () => {
+    await db.insert(entitlements).values([
+      { userId: "u1", kind: "premium_monthly", source: "demo", startsAt: new Date("2026-11-05T00:00:00Z"), expiresAt: new Date("2026-12-05T00:00:00Z") },
+      { userId: "u1", kind: "single_book", work: "secret-of-lake-bakaly", source: "demo", startsAt: new Date("2026-11-01T00:00:00Z") },
+      { userId: "u2", kind: "single_book", work: "secret-of-lake-bakaly", source: "demo" },
+    ]);
+    const rows = await listReaderEntitlements(db, "u1");
+    expect(rows.map((r) => [r.kind, r.source])).toEqual([
+      ["single_book", "demo"],
+      ["premium_monthly", "demo"],
+    ]);
+  });
 });
 
 describe("loadEntitlements", () => {

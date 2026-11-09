@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { MAX_FONT_SIZE, MIN_FONT_SIZE, type ReaderFont, type ReaderTheme, type Settings } from "@/lib/state";
 import { updateSettings } from "@/lib/store";
 import type { BookInfo } from "@/lib/types";
-import { CloseIcon } from "../icons";
+import { CloseIcon, LockIcon } from "../icons";
 
 function Overlay({ label, onClose, children, position }: {
   label: string;
@@ -27,9 +27,11 @@ function Overlay({ label, onClose, children, position }: {
   );
 }
 
-export function ChapterMenu({ book, currentChapter, onPick, onClose }: {
+export function ChapterMenu({ book, currentChapter, isLocked, onPick, onClose }: {
   book: BookInfo;
   currentChapter: number;
+  /** Paid chapters this reader has not bought: shown with a lock, still clickable (opens the paywall). */
+  isLocked: (chapter: number) => boolean;
   onPick: (firstPage: number) => void;
   onClose: () => void;
 }) {
@@ -47,6 +49,7 @@ export function ChapterMenu({ book, currentChapter, onPick, onClose }: {
       <ol className="mt-4 flex flex-col gap-1.5">
         {book.chapters.map((chapter) => {
           const current = chapter.n === currentChapter;
+          const locked = isLocked(chapter.n);
           return (
             <li key={chapter.n}>
               <button
@@ -62,7 +65,7 @@ export function ChapterMenu({ book, currentChapter, onPick, onClose }: {
                 >
                   {chapter.n}
                 </span>
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block font-medium">{chapter.n}-тарау: {chapter.title}</span>
                   <span className="block text-sm text-[var(--r-muted)]">
                     {chapter.firstPage === chapter.lastPage
@@ -70,6 +73,12 @@ export function ChapterMenu({ book, currentChapter, onPick, onClose }: {
                       : `${chapter.firstPage}–${chapter.lastPage} беттер`}
                   </span>
                 </span>
+                {locked && (
+                  <>
+                    <LockIcon className="size-5 shrink-0 text-[var(--r-muted)]" />
+                    <span className="sr-only">Ақылы тарау</span>
+                  </>
+                )}
               </button>
             </li>
           );

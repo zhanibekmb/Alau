@@ -290,8 +290,10 @@ E2E (Playwright, десктоп и 360 px): гость читает до кул�
   - Файлы: `src/lib/payments-mode.ts` (только точное `demo` открывает доступ, иначе interest + предупреждение в логе), `src/lib/paywall-request.ts` (проверка запроса; цена из запроса игнорируется), `src/lib/paywall.ts` (`choosePlan` с блокировкой на читателя в транзакции, `recordPaywallShown`), `src/lib/catalog.ts` (`findPaidWork`), `src/app/api/paywall/choice/route.ts`, `src/app/api/paywall/seen/route.ts` (гость считается по `anon_id`), `.env.example`.
   - Тесты: `paywall-request.test.ts`, `paywall.db.test.ts` (interest ничего не выдаёт; demo: книга навсегда, Premium ровно 30 дней, повтор и три одновременных нажатия → одна запись, второй Premium не накладывается на активный).
   - Проверено на живом сайте в обоих режимах; тестовые данные удалены.
-- [ ] **T6 (P1, human: ~1 день / CC: ~40 мин)** — интерфейс — пэйволл в читалке, замки в меню глав, тариф в профиле, 360 px.
-  - Файлы: `src/components/reader/*`, `src/components/paywall.tsx`, `src/components/profile.tsx`.
+- [x] **T6 (P1, human: ~1 день / CC: ~40 мин)** — интерфейс — пэйволл в читалке, замки в меню глав, тариф в профиле, 360 px. Сделано 2026-11-09.
+  - Файлы: `src/components/reader/paywall.tsx` (три тарифа, Premium на месяц выбран заранее; гость → регистрация с возвратом на ту же главу), `src/components/reader/reader.tsx`, `src/components/reader/panels.tsx` (замок у платных глав, если произведение не куплено), `src/components/account.tsx` (`TariffCard` в профиле), `src/app/api/me/entitlements/route.ts`, `src/lib/entitlement-view.ts`, `src/lib/use-entitlements.ts`, `src/lib/anon-id.ts`, `src/components/icons.tsx` (`LockIcon`).
+  - Тесты: `entitlement-view.test.ts`, `listReaderEntitlements` в `entitlements.db.test.ts`.
+  - Проверено в браузере (демо-режим): гость → пэйволл → регистрация → возврат на гл. 7 → «Осы кітап» → глава открылась без перезагрузки; замки в меню; тариф в профиле; 360 px. Сообщение режима interest («Төлем жақында ашылады») проверено только тестами логики, на экране не смотрели.
 - [ ] **T6b (P1, human: ~3 ч / CC: ~20 мин)** — E2E — Playwright, два теста (E3B).
   - Файлы: `playwright.config.ts`, `e2e/paywall.spec.ts`, `package.json`.
   - Проверка: `npx playwright test` на десктопе и 360 px.
