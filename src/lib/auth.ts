@@ -40,6 +40,21 @@ export function createAuth(db: Database, options: { secret: string; baseURL?: st
         "/sign-up/email": { window: 60, max: AUTH_ATTEMPTS_PER_MINUTE },
       },
     },
+    databaseHooks: {
+      user: {
+        create: {
+          // Counted on /admin/paywall. The guest's earlier paywall events are linked to this
+          // user later, when the browser sends its anon id with the first sync (E1B).
+          after: async (created) => {
+            try {
+              await db.insert(schema.paywallEvents).values({ userId: created.id, type: "signup" });
+            } catch (error) {
+              console.error("[auth] could not record a signup event:", error);
+            }
+          },
+        },
+      },
+    },
     // Lets server actions set the session cookie through next/headers.
     plugins: [nextCookies()],
   });

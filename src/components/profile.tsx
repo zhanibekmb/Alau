@@ -1,16 +1,19 @@
 "use client";
 
+import { learnedCount } from "@/lib/review";
 import { clearAllData, updateSettings, useAppState } from "@/lib/store";
-import { LEVELS } from "@/lib/types";
+import { LEVELS, levelLabel } from "@/lib/types";
 import { AccountCard, TariffCard } from "./account";
+import { StreakCard } from "./streak";
 
 export function Profile() {
-  const { progress, words, settings } = useAppState();
+  const { progress, words, reviews, settings } = useAppState();
   const reading = Object.values(progress);
   const stats = [
     { value: reading.length, label: "кітап" },
     { value: reading.reduce((sum, p) => sum + p.page, 0), label: "бет оқылды" },
     { value: Object.keys(words).length, label: "сөз сөздікте" },
+    { value: learnedCount(words, reviews), label: "сөз үйренілді" },
   ];
 
   return (
@@ -18,9 +21,10 @@ export function Profile() {
       <h1 className="text-3xl font-bold md:text-4xl">Профиль</h1>
 
       <AccountCard />
+      <StreakCard />
       <TariffCard />
 
-      <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         {stats.map(({ value, label }) => (
           <div key={label} className="rounded-2xl border border-line p-3">
             <dd className="text-2xl font-bold">{value}</dd>
@@ -38,8 +42,9 @@ export function Profile() {
               key={level}
               type="button"
               aria-pressed={settings.level === level}
+              aria-label={levelLabel(level)}
               onClick={() => updateSettings({ level: settings.level === level ? null : level })}
-              className={`h-11 flex-1 rounded-full font-medium ${
+              className={`h-11 flex-1 rounded-full font-medium transition-colors duration-300 ${
                 settings.level === level ? "bg-ink text-white" : "bg-chip text-muted"
               }`}
             >
@@ -47,6 +52,9 @@ export function Profile() {
             </button>
           ))}
         </div>
+        <p className="mt-2 h-5 text-sm font-medium" aria-live="polite">
+          {settings.level ? levelLabel(settings.level) : <span className="text-muted">Деңгей таңдалмаған</span>}
+        </p>
       </section>
 
       <section className="mt-8 border-t border-line pt-6">

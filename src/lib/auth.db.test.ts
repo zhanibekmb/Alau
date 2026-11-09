@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Database } from "../db";
-import { account, user } from "../db/schema";
+import { account, paywallEvents, user } from "../db/schema";
 import { createTestDb, resetDb } from "../db/test-db";
 import { AUTH_ATTEMPTS_PER_MINUTE, createAuth, type Auth } from "./auth";
 
@@ -115,5 +115,16 @@ describe("sign-out", () => {
     const cookie = setCookie.split(";")[0];
     expect((await post("/sign-out", {}, freshIp(), cookie)).status).toBe(200);
     expect(await auth.api.getSession({ headers: new Headers({ cookie }) })).toBeNull();
+  });
+});
+
+describe("signup event (counted on /admin/paywall)", () => {
+  it("records one signup event for a new account and none for a refused one", async () => {
+    expect((await signUp("new@example.kz", "long-password-1")).status).toBe(200);
+    expect((await signUp("new@example.kz", "long-password-1")).status).not.toBe(200);
+    const [created] = await db.select().from(user).where(eq(user.email, "new@example.kz"));
+    const events = await db.select().from(paywallEvents);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ type: "signup", userId: created.id });
   });
 });

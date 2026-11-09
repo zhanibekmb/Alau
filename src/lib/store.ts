@@ -8,9 +8,13 @@ import {
   parseStoredState,
   type AppState,
   type Progress,
+  type Review,
   type SavedWord,
   type Settings,
 } from "./state";
+import { answer } from "./review";
+import { dayKey } from "./streak";
+import { applyServerData, type ReaderData, type SyncOp } from "./sync";
 
 const KEY = "alau:v1";
 let state: AppState = INITIAL_STATE;
@@ -81,21 +85,65 @@ export function useHydrated(): boolean {
   return useSyncExternalStore(noSubscribe, () => true, () => false);
 }
 
-export const recordProgress = (slug: string, progress: Progress) =>
-  update((s) => ({
-    ...s,
-    progress: { ...s.progress, [slug]: mergeProgress(s.progress[slug], progress) },
-  }));
+/** Set while a reader is signed in: every change to progress or words is also queued for the server. */
+let syncSink: ((op: SyncOp) => void) | null = null;
+export function setSyncSink(sink: ((op: SyncOp) => void) | null) {
+  syncSink = sink;
+}
 
-export const saveWord = (word: SavedWord) =>
+/** A page was read: saves progress and marks today for the streak. */
+export const recordProgress = (slug: string, progress: Progress) => {
+  const day = dayKey(new Date());
+  let newDay = false;
+  update((s) => {
+    newDay = !s.readingDays[day];
+    return {
+      ...s,
+      progress: { ...s.progress, [slug]: mergeProgress(s.progress[slug], progress) },
+      readingDays: newDay ? { ...s.readingDays, [day]: true } : s.readingDays,
+    };
+  });
+  syncSink?.({ type: "progress", slug, progress });
+  if (newDay) syncSink?.({ type: "day", day });
+};
+
+/** One answer in a word review session. */
+export const recordReview = (id: string, knew: boolean) => {
+  let review: Review | undefined;
+  update((s) => {
+    review = answer(s.reviews[id], knew, Date.now());
+    return { ...s, reviews: { ...s.reviews, [id]: review } };
+  });
+  if (review) syncSink?.({ type: "review", id, review });
+};
+
+export const saveWord = (word: SavedWord) => {
   update((s) => ({ ...s, words: addWord(s.words, word) }));
+  syncSink?.({ type: "word", word });
+};
 
-export const removeWord = (id: string) =>
+export const removeWord = (id: string) => {
   update((s) => {
     const words = { ...s.words };
+    const reviews = { ...s.reviews };
     delete words[id];
-    return { ...s, words };
+    delete reviews[id];
+    return { ...s, words, reviews };
   });
+  syncSink?.({ type: "unword", id });
+};
+
+/** The local copy and this browser's queue as they are right now (for the sync). */
+export function readReaderData(): ReaderData {
+  const { progress, words, readingDays, reviews } = readStorage();
+  return { progress, words, readingDays, reviews };
+}
+
+export const mergeFromServer = (server: ReaderData, pending: SyncOp[]) =>
+  update((s) => applyServerData(s, server, pending));
+
+/** After sign-out the account's reading data leaves this browser; settings and saved books stay. */
+export const clearReaderData = () => update((s) => ({ ...s, progress: {}, words: {}, readingDays: {}, reviews: {} }));
 
 export const toggleSavedBook = (slug: string) =>
   update((s) => {

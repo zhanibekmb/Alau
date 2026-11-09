@@ -1,6 +1,17 @@
 export const LEVELS = ["A1", "A2", "B1", "B2"] as const;
 export type Level = (typeof LEVELS)[number];
 
+/** CEFR level names in Kazakh, as on the Kazakh language test (Қазтест): A1 is from the Figma design. */
+export const LEVEL_TITLES: Record<Level, string> = {
+  A1: "Бастауыш",
+  A2: "Базалық",
+  B1: "Орта",
+  B2: "Ортадан жоғары",
+};
+
+/** "A1 – Бастауыш" */
+export const levelLabel = (level: Level) => `${level} – ${LEVEL_TITLES[level]}`;
+
 export type License = {
   holder: string;
   status: "active" | "revoked";

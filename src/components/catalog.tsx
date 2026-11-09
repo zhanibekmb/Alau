@@ -4,19 +4,12 @@ import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { progressPercent } from "@/lib/state";
 import { useAppState, useHydrated } from "@/lib/store";
-import { LEVELS, type BookInfo, type Level } from "@/lib/types";
+import { LEVEL_TITLES, LEVELS, type BookInfo, type Level } from "@/lib/types";
 import { BookCard, BookCover } from "./book-card";
 import { Flame, Mascot } from "./brand";
 import { SearchIcon } from "./icons";
 
 type Filter = Level | "all";
-export const LEVEL_NAMES: Record<Filter, string> = {
-  all: "Барлығы",
-  A1: "A1 - Бастауыш",
-  A2: "A2",
-  B1: "B1",
-  B2: "B2",
-};
 
 /** Phone page header from the Figma Mobile Version: title, flame mark, one-line purpose. */
 export function PhoneHeader({ title, children }: { title: string; children: ReactNode }) {
@@ -66,17 +59,35 @@ export function ChipRow({ label, className = "", children }: { label: string; cl
   );
 }
 
-export function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+/**
+ * A filter pill. `detail` slides out next to the label while the pill is chosen
+ * (the level name: "A1" becomes "A1 – Бастауыш"). Screen readers always hear the whole text.
+ */
+export function Chip({ active, onClick, children, detail }: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  detail?: string;
+}) {
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`h-10 shrink-0 rounded-full px-[15px] text-sm font-medium whitespace-nowrap transition-colors md:px-4 ${
-        active ? "bg-ink text-white" : "bg-chip text-muted hover:text-ink"
+      className={`inline-flex h-10 shrink-0 items-center rounded-full px-[15px] text-sm font-medium whitespace-nowrap transition-colors duration-300 md:px-4 ${
+        active ? "bg-ink text-white shadow-md shadow-black/15" : "bg-chip text-muted hover:text-ink"
       }`}
     >
       {children}
+      {detail && (
+        <span
+          className={`grid transition-[grid-template-columns,opacity] duration-300 ease-out motion-reduce:transition-none ${
+            active ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0"
+          }`}
+        >
+          <span className="overflow-hidden">&nbsp;– {detail}</span>
+        </span>
+      )}
     </button>
   );
 }
@@ -182,8 +193,13 @@ export function Catalog({ books }: { books: BookInfo[] }) {
 
       <ChipRow label="Деңгей" className="mt-5 md:mt-4">
         {(["all", ...LEVELS] as Filter[]).map((level) => (
-          <Chip key={level} active={filter === level} onClick={() => setChosen(level)}>
-            {LEVEL_NAMES[level]}
+          <Chip
+            key={level}
+            active={filter === level}
+            onClick={() => setChosen(level)}
+            detail={level === "all" ? undefined : LEVEL_TITLES[level]}
+          >
+            {level === "all" ? "Барлығы" : level}
           </Chip>
         ))}
       </ChipRow>

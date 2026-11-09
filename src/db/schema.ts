@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   pgEnum,
@@ -21,7 +22,8 @@ export * from "./auth-schema";
 //   user ─┬─< entitlements     what a reader may read (demo now, Kaspi later)
 //         ├─< paywall_events   what readers did at the paywall (user or anonymous)
 //         ├─< reading_progress one row per book level the reader opened
-//         └─< saved_words      one row per saved word meaning
+//         ├─< saved_words      one row per saved word meaning, with its review box
+//         └─< reading_days     one row per local date with reading (the streak)
 
 /** single_book never expires; premium has expires_at. */
 export const entitlementKind = pgEnum("entitlement_kind", ["single_book", "premium_monthly", "premium_annual"]);
@@ -113,6 +115,22 @@ export const savedWords = pgTable(
     page: integer("page").notNull(),
     sentence: text("sentence").notNull(),
     savedAt: timestamp("saved_at", { withTimezone: true }).notNull(),
+    /** Leitner box 0..5 (src/lib/review.ts). Null review times mean never reviewed. */
+    reviewBox: integer("review_box").default(0).notNull(),
+    reviewDue: timestamp("review_due", { withTimezone: true }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   },
   (table) => [primaryKey({ columns: [table.userId, table.glossId] })],
+);
+
+/** A day is the reader's local calendar date ("2026-11-09"), as their browser sees it. */
+export const readingDays = pgTable(
+  "reading_days",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.day] })],
 );

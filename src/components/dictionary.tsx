@@ -3,13 +3,18 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { SavedWord } from "@/lib/state";
+import { SESSION_SIZE, dueWords, learnedCount } from "@/lib/review";
 import { removeWord, useAppState } from "@/lib/store";
+import { useNow } from "@/lib/use-now";
 import { POS_LABELS } from "@/lib/types";
 import { Mascot } from "./brand";
-import { CloseIcon, SearchIcon } from "./icons";
+import { CloseIcon, RepeatIcon, SearchIcon } from "./icons";
+import { WordReview } from "./word-review";
 
 export function Dictionary() {
-  const { words } = useAppState();
+  const { words, reviews } = useAppState();
+  const now = useNow();
+  const [session, setSession] = useState<string[] | null>(null);
   const [view, setView] = useState<"all" | "book">("all");
   const [query, setQuery] = useState("");
   const [bookSlug, setBookSlug] = useState<string | null>(null);
@@ -40,6 +45,16 @@ export function Dictionary() {
   return (
     <div className="mx-auto w-full max-w-[913px] px-4 pb-10 pt-6 md:px-8 md:pt-14">
       <h1 className="text-3xl font-bold md:text-4xl">Сөздік</h1>
+
+      {all.length > 0 && (
+        <ReviewBanner
+          due={now ? dueWords(words, reviews, now.getTime()).length : null}
+          learned={learnedCount(words, reviews)}
+          total={all.length}
+          onStart={() => setSession(dueWords(words, reviews, Date.now()).slice(0, SESSION_SIZE).map((w) => w.id))}
+        />
+      )}
+      {session && <WordReview initialQueue={session} onClose={() => setSession(null)} />}
 
       {all.length === 0 ? (
         <div className="mt-12 flex flex-col items-center gap-3 py-8 text-center">
@@ -141,6 +156,44 @@ export function Dictionary() {
         </>
       )}
     </div>
+  );
+}
+
+/** "N сөз қайталауды күтіп тұр" with the start button, and how many words are learned. */
+function ReviewBanner({ due, learned, total, onStart }: {
+  due: number | null;
+  learned: number;
+  total: number;
+  onStart: () => void;
+}) {
+  const ready = due !== null && due > 0;
+  return (
+    <section className="mt-5 flex flex-wrap items-center gap-4 rounded-3xl bg-gradient-to-br from-accent-soft via-white to-white p-4 ring-1 ring-accent/25 md:p-5">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white text-accent shadow-sm" aria-hidden="true">
+        <RepeatIcon className="size-6" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">
+          {due === null ? "Сөздерді қайталау" : ready ? `${due} сөз қайталауды күтіп тұр` : "Бүгінгі қайталау аяқталды"}
+        </p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="h-1.5 max-w-40 flex-1 overflow-hidden rounded-full bg-chip">
+            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(learned / Math.max(total, 1)) * 100}%` }} />
+          </div>
+          <span className="text-sm text-muted">
+            {learned}/{total} үйренілді
+          </span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onStart}
+        disabled={!ready}
+        className="h-12 rounded-2xl bg-accent px-5 font-semibold text-on-accent shadow-md shadow-accent/30 transition-transform active:scale-[0.98] disabled:bg-chip disabled:text-muted disabled:shadow-none max-sm:w-full"
+      >
+        Қайталауды бастау
+      </button>
+    </section>
   );
 }
 

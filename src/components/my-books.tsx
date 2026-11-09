@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAppState } from "@/lib/store";
 import { progressPercent, type AppState } from "@/lib/state";
-import type { BookInfo } from "@/lib/types";
+import { levelLabel, type BookInfo } from "@/lib/types";
 import { BookCard, BookCover } from "./book-card";
 import { Mascot } from "./brand";
-import { Chip, ChipRow, LEVEL_NAMES, PhoneHeader, SearchField } from "./catalog";
+import { Chip, ChipRow, PhoneHeader, SearchField } from "./catalog";
+import { StreakChip } from "./streak";
 
 type Tab = "all" | "reading" | "saved" | "finished";
 
@@ -53,12 +54,13 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
       <PhoneHeader title="Менің кітаптарым">Оқып жатқан, ұнатқан және аяқтаған кітаптарыңыздың жеке сөресі</PhoneHeader>
       <h1 className="text-4xl font-bold max-md:hidden">Менің кітаптарым</h1>
 
-      <ul className="mt-[15px] flex gap-2.5 text-[15px] font-medium md:hidden">
-        <li className="flex h-10 items-center gap-2 rounded-full border border-line px-3.5">
+      <ul className="-mx-5 mt-[15px] flex gap-2.5 overflow-x-auto px-5 text-[15px] font-medium whitespace-nowrap [scrollbar-width:none] md:hidden">
+        <StreakChip className="shrink-0" />
+        <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5">
           <span aria-hidden="true">✅</span>
           {groups.finished.length} кітап
         </li>
-        <li className="flex h-10 items-center gap-2 rounded-full border border-line px-3.5">
+        <li className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-line px-3.5">
           <span aria-hidden="true">🧠</span>+{Object.keys(state.words).length} сөз
         </li>
       </ul>
@@ -142,7 +144,7 @@ function ContinueBlock({ book, state }: { book: BookInfo; state: AppState }) {
           <p className="text-sm text-muted">Соңғы оқылған кітап</p>
           <h2 className="mt-1 text-[15px] font-semibold leading-[19px]">{book.title}</h2>
           <span className="mt-auto rounded-lg bg-accent-soft px-2 py-1.5 text-[13px] font-medium leading-none text-amber-800">
-            {LEVEL_NAMES[book.level]}
+            {levelLabel(book.level)}
           </span>
         </div>
       </div>

@@ -1,5 +1,42 @@
 @import "tailwindcss";
 
+/* Desktop sidebar folded to icons. The attribute is set before first paint (src/app/layout.tsx),
+   so a folded sidebar never flashes open on load. */
+@custom-variant collapsed (:root[data-sidebar="collapsed"] &);
+
+:root {
+  --sidebar-w: 270px;
+}
+
+@theme {
+  --animate-card-in: card-in 0.28s ease-out;
+  --animate-pop: pop 0.35s ease-out;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-card-in,
+  .animate-pop {
+    animation: none;
+  }
+}
+:root[data-sidebar="collapsed"] {
+  --sidebar-w: 88px;
+}
+
 /* Colours sampled from the Figma screens. */
 @theme inline {
   --color-accent: #f59e0b;

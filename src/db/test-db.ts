@@ -21,6 +21,6 @@ export const createTestDb = (): Database => createDb(testDatabaseUrl());
 /** Empties every table. Deleting from "user" cascades to the reader tables. */
 export async function resetDb(db: Database): Promise<void> {
   await db.execute(
-    sql`TRUNCATE TABLE "user", "session", "account", "verification", "entitlements", "paywall_events", "reading_progress", "saved_words" CASCADE`,
+    sql`TRUNCATE TABLE "user", "session", "account", "verification", "entitlements", "paywall_events", "reading_progress", "saved_words", "reading_days" CASCADE`,
   );
 }

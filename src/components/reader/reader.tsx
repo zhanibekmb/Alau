@@ -211,7 +211,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
     "flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] md:size-[50px]";
 
   return (
-    <div data-theme={settings.theme} className="reader min-h-dvh">
+    <div data-theme={settings.theme} className="reader flex min-h-dvh flex-col">
       <header className="sticky top-0 z-20 bg-[var(--r-bg)]">
         <div className="mx-auto flex h-[65px] max-w-[1146px] items-center gap-2.5 px-2.5 md:h-[90px] md:px-6">
           <button
@@ -259,7 +259,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[680px] px-5 pb-10 pt-5 md:px-4 md:pt-10">
+      <main className={`mx-auto flex w-full max-w-[680px] flex-1 flex-col px-5 pt-5 md:px-4 md:pt-10 ${isReady && !showFinish ? "" : "pb-10"}`}>
         {showFinish ? (
           <FinishScreen
             book={book}
@@ -298,7 +298,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           </div>
         ) : (
           <>
-            <article lang="en" style={{ fontFamily: FONT_FAMILY[settings.font], fontSize: settings.fontSize, lineHeight: 1.85 }}>
+            <article lang="en" className="mb-2" style={{ fontFamily: FONT_FAMILY[settings.font], fontSize: settings.fontSize, lineHeight: 1.85 }}>
               {page === chapterInfo.firstPage && (
                 <h1 className="mb-[1em] text-[1.6em] leading-tight">
                   Chapter {chapterInfo.n}: {file.title}
@@ -307,7 +307,8 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
               <PageText page={pageData} selection={selection} savedIds={savedIds} onTap={onTap} />
             </article>
 
-            <footer className="mt-2 flex items-center justify-between gap-2 border-t border-[var(--r-line)] pt-5 md:grid md:grid-cols-3 md:pt-6">
+            {/* Pinned to the bottom of the screen, so "Келесі" is always under the thumb. */}
+            <footer className="sticky bottom-0 z-10 -mx-5 mt-auto flex items-center justify-between gap-2 border-t border-[var(--r-line)] bg-[var(--r-bg)]/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:-mx-4 md:grid md:grid-cols-3 md:px-4 md:pb-4 md:pt-4">
               <div className="flex items-center gap-2">
                 <Link
                   href="/dictionary"

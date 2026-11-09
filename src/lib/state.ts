@@ -30,12 +30,21 @@ export type Settings = {
   fontSize: number;
   level: Level | null;
   hintSeen: boolean;
+  /** Desktop sidebar shows icons only. */
+  sidebarCollapsed: boolean;
 };
+
+/** Spaced-repetition state of one saved word (Leitner boxes, src/lib/review.ts). */
+export type Review = { box: number; due: number; reviewedAt: number };
 
 export type AppState = {
   progress: Record<string, Progress>;
   savedBooks: Record<string, number>;
   words: Record<string, SavedWord>;
+  /** Local dates ("2026-11-09") on which the reader read at least one page: the streak. */
+  readingDays: Record<string, true>;
+  /** Keyed by word id. A saved word without an entry has never been reviewed. */
+  reviews: Record<string, Review>;
   settings: Settings;
 };
 
@@ -43,7 +52,9 @@ export const INITIAL_STATE: AppState = {
   progress: {},
   savedBooks: {},
   words: {},
-  settings: { theme: "paper", font: "serif", fontSize: 20, level: null, hintSeen: false },
+  readingDays: {},
+  reviews: {},
+  settings: { theme: "paper", font: "serif", fontSize: 20, level: null, hintSeen: false, sidebarCollapsed: false },
 };
 
 /** Progress never moves back, so an old tab cannot overwrite a newer one. */
@@ -78,6 +89,8 @@ export function parseStoredState(raw: string | null): AppState {
       progress: data.progress ?? {},
       savedBooks: data.savedBooks ?? {},
       words: data.words ?? {},
+      readingDays: data.readingDays ?? {},
+      reviews: data.reviews ?? {},
       settings: {
         ...INITIAL_STATE.settings,
         ...settings,
@@ -88,6 +101,7 @@ export function parseStoredState(raw: string | null): AppState {
           ? (settings.font as ReaderFont)
           : "serif",
         level: LEVELS.includes(settings.level as Level) ? (settings.level as Level) : null,
+        sidebarCollapsed: settings.sidebarCollapsed === true,
       },
     };
   } catch {

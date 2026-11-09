@@ -7,7 +7,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Suspense>
         <Sidebar />
       </Suspense>
-      <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:ml-[270px] md:pb-0">{children}</main>
+      <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:ml-[var(--sidebar-w)] md:pb-0 md:transition-[margin] md:duration-300">{children}</main>
     </>
   );
 }

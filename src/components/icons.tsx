@@ -57,6 +57,12 @@ export const BookmarkIcon = ({ filled, ...p }: Props & { filled?: boolean }) => 
 export const CheckIcon = (p: Props) => (
   <Icon {...p}><path d="M4 12l5 5L20 6" /></Icon>
 );
+export const PanelIcon = (p: Props) => (
+  <Icon {...p}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></Icon>
+);
+export const RepeatIcon = (p: Props) => (
+  <Icon {...p}><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></Icon>
+);
 export const LockIcon = (p: Props) => (
   <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></Icon>
 );
