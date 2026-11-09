@@ -90,7 +90,10 @@ export function AccountBadge() {
         <span className="min-w-0 collapsed:hidden">
           <span className="block truncate font-semibold">{data.user.name || data.user.email}</span>
           {premium.length > 0 ? (
-            <span className="block text-xs font-medium text-amber-600">👑 Alau Pro</span>
+            <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+              <ProBadge />
+              Premium
+            </span>
           ) : (
             <span className="block text-xs text-muted">Тегін тариф</span>
           )}
@@ -110,6 +113,15 @@ export function AccountBadge() {
   );
 }
 
+/** Small "PRO" plate for Premium readers (replaces the crown emoji from the Figma sidebar). */
+export function ProBadge() {
+  return (
+    <span className="inline-flex h-[18px] items-center rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-1.5 text-[10px] leading-none font-bold tracking-[0.08em] text-white shadow-sm shadow-orange-500/30">
+      PRO
+    </span>
+  );
+}
+
 /** A Premium purchase that ends within this many days is shown in amber. */
 const ENDING_SOON_DAYS = 3;
 
@@ -119,12 +131,7 @@ export function SubscriptionCard() {
   const plan = premium[0];
 
   return (
-    <section
-      className="relative flex min-h-[300px] flex-col overflow-hidden rounded-3xl bg-[#201f4b] p-6 text-white"
-      aria-labelledby="subscription-title"
-    >
-      <Mascot pose="subscription" className="pointer-events-none absolute -bottom-4 -right-4 size-36 opacity-90" />
-
+    <section className="flex min-h-[300px] flex-col overflow-hidden rounded-3xl bg-[#201f4b] p-6 text-white" aria-labelledby="subscription-title">
       {plan && now ? (
         <PremiumInfo item={plan} now={now} />
       ) : (
@@ -133,22 +140,24 @@ export function SubscriptionCard() {
           <h2 id="subscription-title" className="mt-1 text-2xl font-bold">
             Тегін тариф
           </h2>
-          <p className="mt-2 max-w-[220px] text-sm text-white/70">
+          <p className="mt-2 text-sm text-white/70">
             Әр кітаптың кульминацияға дейінгі бөлімі ашық. Толық оқу үшін соңғы тегін тараудан кейін тариф таңдаңыз.
           </p>
-          {!signedIn && (
-            <Link
-              href="/login?mode=sign-up&next=/profile"
-              className="relative mt-auto self-start rounded-2xl bg-accent px-5 py-3 font-semibold text-on-accent"
-            >
-              Тіркелу
-            </Link>
-          )}
+          <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+            {!signedIn ? (
+              <Link href="/login?mode=sign-up&next=/profile" className="mb-1 rounded-2xl bg-accent px-5 py-3 font-semibold text-on-accent">
+                Тіркелу
+              </Link>
+            ) : (
+              <span />
+            )}
+            <Mascot pose="subscription" className="-mb-3 -mr-3 size-28 shrink-0" />
+          </div>
         </>
       )}
 
       {books.length > 0 && (
-        <ul className="relative mt-4 flex flex-col gap-1.5 border-t border-white/15 pt-4 text-sm">
+        <ul className="mt-4 flex flex-col gap-1.5 border-t border-white/15 pt-4 text-sm">
           {books.map((item) => (
             <li key={item.work} className="flex items-center gap-2">
               <span aria-hidden="true">📖</span>
@@ -185,12 +194,16 @@ function PremiumInfo({ item, now }: { item: EntitlementView; now: Date }) {
           Белсенді
         </span>
       </div>
-      <h2 id="subscription-title" className="mt-6 text-3xl font-bold">
-        {plan?.title ?? "Alau Premium"}
+      <h2 id="subscription-title" className="mt-5 text-3xl font-bold">
+        Alau Premium
       </h2>
-      <p className="mt-1 text-sm text-white/70">Барлық кітап толық ашық</p>
+      <p className="mt-1 text-sm text-white/70">
+        {item.kind === "premium_annual" ? "Жылдық" : "Айлық"} жазылым · барлық кітап толық ашық
+      </p>
 
-      <div className="relative mt-auto max-w-[220px] pt-6">
+      {/* The mascot sits beside the dates, never on top of them. */}
+      <div className="mt-auto flex items-end gap-2 pt-6">
+        <div className="min-w-0 flex-1">
         <p className={`text-xl font-bold ${endingSoon ? "text-amber-300" : ""}`}>{remainingText(end, now)}</p>
         <div
           className="mt-2 h-2 overflow-hidden rounded-full bg-white/15"
@@ -206,8 +219,10 @@ function PremiumInfo({ item, now }: { item: EntitlementView; now: Date }) {
           />
         </div>
         <p className="mt-2 text-sm text-white/70">
-          Аяқталу күні: <span className="font-medium text-white">{formatKkDate(end)}</span>
+          Аяқталу күні: <span className="font-medium whitespace-nowrap text-white">{formatKkDate(end)}</span>
         </p>
+        </div>
+        <Mascot pose="subscription" className="-mb-3 -mr-3 size-24 shrink-0 md:size-28" />
       </div>
     </>
   );
