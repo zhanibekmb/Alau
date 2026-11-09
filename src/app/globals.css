@@ -18,6 +18,45 @@
     transform: translateY(12px) scale(0.98);
   }
 }
+/* Landing: a word that changes inside its pill (5 rows, the last repeats the first so the loop is seamless). */
+@keyframes word-cycle {
+  0%,
+  18% {
+    transform: translateY(0);
+  }
+  22%,
+  38% {
+    transform: translateY(-20%);
+  }
+  42%,
+  58% {
+    transform: translateY(-40%);
+  }
+  62%,
+  78% {
+    transform: translateY(-60%);
+  }
+  82%,
+  100% {
+    transform: translateY(-80%);
+  }
+}
+/* Landing: endless ticker; the content is written twice, so moving by half loops it. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes float {
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-loop {
+    animation: none !important;
+  }
+}
 @keyframes drawer-in {
   from {
     transform: translateX(-100%);
@@ -60,6 +99,8 @@
   --font-sans: var(--ff-inter);
   --font-serif: var(--ff-pt-serif);
   --font-lora: var(--ff-lora);
+  /* Landing headings (Nunito, loaded on the landing page only). */
+  --font-display: var(--ff-display), var(--ff-inter), system-ui, sans-serif;
 }
 
 /* Reader themes, sampled from the Figma reader frames (reader page, DARK, DARKGREEN, WARM-BROWN). */

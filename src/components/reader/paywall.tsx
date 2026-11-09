@@ -135,7 +135,7 @@ export function Paywall({
             {LEGAL.contactEmail}
           </a>
         </p>
-        <Link href="/" className="mt-2 rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
+        <Link href="/library" className="mt-2 rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
           Кітапханаға оралу
         </Link>
       </section>
@@ -318,7 +318,7 @@ function TransferSteps({ option, bookTitle, transfer, email, onBack }: {
         <button type="button" onClick={onBack} className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
           Басқа тариф таңдау
         </button>
-        <Link href="/" className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
+        <Link href="/library" className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
           Кітапханаға оралу
         </Link>
       </div>

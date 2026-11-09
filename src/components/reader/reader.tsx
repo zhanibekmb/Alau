@@ -13,7 +13,7 @@ import { sentenceText } from "@/lib/text";
 import { addReadingTime, recordProgress, saveWord, updateSettings, useAppState, useHydrated } from "@/lib/store";
 import type { BookInfo, ChapterFile, Gloss, Page } from "@/lib/types";
 import { Mascot } from "../brand";
-import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, MenuIcon } from "../icons";
+import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, DictionaryIcon, MenuIcon } from "../icons";
 import { viewUnlocksWork } from "@/lib/entitlement-view";
 import { useEntitlements } from "@/lib/use-entitlements";
 import { ChapterMenu, OriginalPanel, SettingsPanel } from "./panels";
@@ -261,7 +261,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
             aria-label={`Сөздікке: ${bookWordCount} сөз`}
             className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3 text-sm font-medium max-md:hidden"
           >
-            <span aria-hidden="true">📔</span>
+            <DictionaryIcon className="size-5 text-accent" />
             Сөздікке:
             <span className="text-accent">{bookWordCount} сөз</span>
           </Link>
@@ -279,7 +279,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
           <button type="button" onClick={() => setPanel("settings")} aria-label="Оқу баптаулары" className={`${circleButton} font-medium`}>
             Aa
           </button>
-          <Link href="/" aria-label="Кітаптан шығу" className={circleButton}>
+          <Link href="/library" aria-label="Кітаптан шығу" className={circleButton}>
             <CloseIcon className="size-5" />
           </Link>
         </div>
@@ -344,7 +344,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
                   aria-label={`Сөздікке: ${bookWordCount} сөз`}
                   className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--r-line)] bg-[var(--r-surface)] px-3.5 font-medium text-accent md:hidden"
                 >
-                  <span aria-hidden="true">📔</span>
+                  <DictionaryIcon className="size-5 text-accent" />
                   {bookWordCount}
                 </Link>
                 {page !== null && page > 1 && (
@@ -444,7 +444,7 @@ export function Unavailable() {
       <Mascot pose="empty-state" className="size-28" />
       <p className="text-xl font-semibold">Кітап қолжетімсіз</p>
       <p className="opacity-70">Бұл кітап қазір оқуға ашық емес.</p>
-      <Link href="/" className="mt-2 rounded-xl bg-accent px-5 py-3 font-medium text-on-accent">
+      <Link href="/library" className="mt-2 rounded-xl bg-accent px-5 py-3 font-medium text-on-accent">
         Кітапханаға оралу
       </Link>
     </div>
@@ -460,7 +460,7 @@ function FinishScreen({ book, wordCount, onRestart }: { book: BookInfo; wordCoun
         Сіз «{book.title}» кітабын оқып бітірдіңіз. Сөздікте осы кітаптан {wordCount} сөз бар.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <Link href="/" className="rounded-2xl bg-accent px-5 py-3 font-medium text-on-accent">
+        <Link href="/library" className="rounded-2xl bg-accent px-5 py-3 font-medium text-on-accent">
           Кітапханаға оралу
         </Link>
         <Link href="/dictionary" className="rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">

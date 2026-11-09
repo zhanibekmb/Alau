@@ -132,7 +132,7 @@ export function ContinueCard({ books }: { books: BookInfo[] }) {
     <section className="relative flex items-center gap-4 rounded-3xl bg-white p-4 shadow-lg shadow-black/8 ring-1 ring-black/5 sm:p-5">
       {/* Peeks out on the left, as in the Figma catalog. */}
       <Mascot className="pointer-events-none absolute -left-[92px] -top-2 hidden size-24 xl:block" />
-      <BookCover cover={current.cover} className="h-24 w-[72px] shrink-0 rounded-xl sm:h-[140px] sm:w-[110px]" />
+      <BookCover cover={current.cover} className="h-[108px] w-[72px] shrink-0 rounded-xl sm:h-[165px] sm:w-[110px]" />
       <div className="min-w-0 flex-1">
         <p className="text-sm text-muted">Оқуды жалғастыру</p>
         <h2 className="mt-1 text-lg font-semibold leading-snug sm:text-xl">{current.title}</h2>
@@ -229,7 +229,7 @@ export function CatalogSkeleton() {
       <div className="mt-8 h-10 w-48 rounded-xl bg-sidebar" />
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="aspect-[3/4] rounded-2xl bg-sidebar" />
+          <div key={i} className="aspect-[2/3] rounded-2xl bg-sidebar" />
         ))}
       </div>
     </div>

@@ -75,7 +75,7 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
         <>
           <ContinueBlock book={current} state={state} />
           <section className="mt-8 flex items-center gap-5 rounded-3xl bg-white p-5 shadow-lg shadow-black/8 ring-1 ring-black/5 max-md:hidden">
-            <BookCover cover={current.cover} className="h-[160px] w-[120px] shrink-0 rounded-2xl" />
+            <BookCover cover={current.cover} className="h-[180px] w-[120px] shrink-0 rounded-2xl" />
             <div className="min-w-0 flex-1">
               <p className="text-muted">Қазір оқылуда</p>
               <h2 className="mt-2 max-w-sm text-xl font-semibold leading-snug">{current.title}</h2>
@@ -132,7 +132,7 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
           <Mascot pose="empty-state" className="size-28" />
           <p className="font-semibold">{q ? "Ештеңе табылмады" : EMPTY[tab]}</p>
           {!q && (
-            <Link href="/" className="rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent">
+            <Link href="/library" className="rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent">
               Кітапханаға өту
             </Link>
           )}
@@ -148,7 +148,7 @@ function ContinueBlock({ book, state }: { book: BookInfo; state: AppState }) {
   return (
     <section className="mt-5 rounded-[20px] border border-line bg-white p-5 shadow-sm md:hidden">
       <div className="flex gap-4">
-        <BookCover cover={book.cover} className="h-[135px] w-[100px] shrink-0 rounded-xl" />
+        <BookCover cover={book.cover} className="h-[150px] w-[100px] shrink-0 rounded-xl" />
         <div className="flex min-w-0 flex-1 flex-col items-start">
           <p className="text-sm text-muted">Соңғы оқылған кітап</p>
           <h2 className="mt-1 text-[15px] font-semibold leading-[19px]">{book.title}</h2>

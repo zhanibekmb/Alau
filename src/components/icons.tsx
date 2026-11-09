@@ -81,6 +81,15 @@ export const FolderIcon = (p: Props) => (
 export const PageIcon = (p: Props) => (
   <Icon {...p}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /></Icon>
 );
+/** Filled book with a bookmark: the reader's dictionary counter (replaces the 📔 emoji). */
+export const DictionaryIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" className={className} aria-hidden="true">
+    <rect x="4" y="2.5" width="16" height="19" rx="3" fill="currentColor" />
+    <path d="M20 17.5H8a2 2 0 0 0 0 4h12" fill="#fff" fillOpacity="0.92" />
+    <path d="M8 2.5v15" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.4" />
+    <path d="M13.5 2.5h4v8.5l-2-1.6-2 1.6z" fill="#201f4b" fillOpacity="0.85" />
+  </svg>
+);
 export const LockIcon = (p: Props) => (
   <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></Icon>
 );

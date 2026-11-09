@@ -55,7 +55,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8 md:py-12">
-      <Link href="/" className="text-sm text-muted hover:text-ink">
+      <Link href="/library" className="text-sm text-muted hover:text-ink">
         ← Кітапхана
       </Link>
       <h1 className="mt-3 text-3xl font-bold">Әкімші панелі</h1>

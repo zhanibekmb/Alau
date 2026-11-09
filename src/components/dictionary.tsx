@@ -102,7 +102,7 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
           <p className="max-w-sm text-muted">
             Кітап оқығанда сөзді басып, «Сөздікке сақтау» батырмасын таңдаңыз. Сөз осы жерде сақталады.
           </p>
-          <Link href="/" className="mt-2 rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent">
+          <Link href="/library" className="mt-2 rounded-xl bg-accent px-5 py-2.5 font-medium text-on-accent">
             Кітапханаға өту
           </Link>
         </div>
@@ -147,9 +147,9 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
                     }`}
                   >
                     {info ? (
-                      <BookCover cover={info.cover} className="h-[110px] w-[80px] shrink-0 rounded-xl md:h-[120px] md:w-[85px]" />
+                      <BookCover cover={info.cover} className="h-[120px] w-[80px] shrink-0 rounded-xl md:h-[128px] md:w-[85px]" />
                     ) : (
-                      <span className="h-[110px] w-[80px] shrink-0 rounded-xl bg-chip" />
+                      <span className="h-[120px] w-[80px] shrink-0 rounded-xl bg-chip" />
                     )}
                     <span className="min-w-0">
                       <span className="line-clamp-2 text-lg font-semibold leading-snug">{book.title}</span>
@@ -385,9 +385,9 @@ function BookSummary({ info, title, count }: { info: BookInfo | undefined; title
   return (
     <div className="flex flex-col items-center justify-center py-4 text-center max-md:hidden md:border-l md:border-line">
       {info ? (
-        <BookCover cover={info.cover} className="h-[310px] w-[214px] rounded-3xl" />
+        <BookCover cover={info.cover} className="h-[321px] w-[214px] rounded-3xl" />
       ) : (
-        <span className="h-[310px] w-[214px] rounded-3xl bg-chip" />
+        <span className="h-[321px] w-[214px] rounded-3xl bg-chip" />
       )}
       <p className="mt-5 text-xl font-semibold">{title}</p>
       {info && <p className="text-muted">{info.author}</p>}

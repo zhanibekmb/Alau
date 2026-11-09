@@ -27,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="text-3xl lg:invisible" aria-label="Alau">
             <Logo />
           </Link>
-          <Link href="/" className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-chip hover:text-ink">
+          <Link href="/library" className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-chip hover:text-ink">
             <ArrowLeftIcon className="size-4" />
             Кітапханаға
           </Link>

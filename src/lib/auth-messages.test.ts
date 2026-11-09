@@ -5,13 +5,13 @@ describe("safeNextPath", () => {
   it.each([
     ["/read/secret-of-lake-bakaly-a2", "/read/secret-of-lake-bakaly-a2"],
     ["/profile?tab=words", "/profile?tab=words"],
-    [undefined, "/"],
-    [null, "/"],
-    ["", "/"],
-    ["https://evil.example", "/"],
-    ["//evil.example", "/"],
-    ["/\\evil.example", "/"],
-    ["javascript:alert(1)", "/"],
+    [undefined, "/library"],
+    [null, "/library"],
+    ["", "/library"],
+    ["https://evil.example", "/library"],
+    ["//evil.example", "/library"],
+    ["/\\evil.example", "/library"],
+    ["javascript:alert(1)", "/library"],
   ])("%s → %s", (input, expected) => {
     expect(safeNextPath(input)).toBe(expected);
   });

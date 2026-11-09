@@ -25,6 +25,6 @@ export function authErrorMessage(error: { code?: string; status?: number } | nul
 
 /** Only same-site paths are allowed after sign-in, so a link cannot send readers to another site. */
 export function safeNextPath(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/";
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/library";
   return next;
 }

@@ -10,14 +10,14 @@ import { BookOpenIcon, HomeIcon, PanelIcon, UserIcon, WordsIcon } from "./icons"
 import { Tooltip } from "./tooltip";
 
 const LINKS = [
-  { href: "/", label: "Кітапхана", Icon: HomeIcon },
+  { href: "/library", label: "Кітапхана", Icon: HomeIcon },
   { href: "/my-books", label: "Менің кітаптарым", Icon: BookOpenIcon },
   { href: "/dictionary", label: "Сөздік", Icon: WordsIcon },
   { href: "/profile", label: "Профиль", Icon: UserIcon },
 ];
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/" || pathname.startsWith("/books");
+  if (href === "/library") return pathname.startsWith("/library") || pathname.startsWith("/books");
   return pathname.startsWith(href);
 }
 
@@ -36,7 +36,7 @@ export function Sidebar() {
     <>
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[var(--sidebar-w)] flex-col bg-sidebar px-5 py-10 transition-[width,padding] duration-300 collapsed:px-3 md:flex">
         <div className="flex items-center justify-between gap-2 collapsed:flex-col collapsed:gap-5">
-          <Link href="/" className="px-1 text-5xl collapsed:px-0" aria-label="Alau">
+          <Link href="/library" className="px-1 text-5xl collapsed:px-0" aria-label="Alau">
             <Logo className="collapsed:hidden" />
             <Flame className="hidden size-11 collapsed:block" />
           </Link>

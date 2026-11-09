@@ -38,7 +38,7 @@ export function BookCard({
 }) {
   return (
     <Link href={href ?? `/books/${book.slug}`} scroll={false} className="group block min-w-0">
-      <div className="relative aspect-[168/230] overflow-hidden rounded-xl bg-chip transition-transform group-hover:-translate-y-0.5 md:aspect-[3/4] md:rounded-2xl">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-chip transition-transform group-hover:-translate-y-0.5 md:rounded-2xl">
         <BookCover cover={book.cover} className="size-full" />
         {/* New words and reading time, as on the Figma cards; the level is in the filter above. */}
         <span className="absolute left-2.5 top-2.5 rounded-lg bg-white/85 px-2 py-0.5 text-xs font-medium backdrop-blur-sm md:text-sm">

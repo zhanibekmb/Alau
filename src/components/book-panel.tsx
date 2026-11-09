@@ -24,7 +24,7 @@ export function BookPanel({ book }: { book: BookInfo }) {
 
   return (
     <>
-      <Link href="/" scroll={false} aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 animate-[fade-in_0.2s] bg-black/30 motion-reduce:animate-none" />
+      <Link href="/library" scroll={false} aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 animate-[fade-in_0.2s] bg-black/30 motion-reduce:animate-none" />
       <aside
         className="fixed inset-x-0 bottom-0 top-[max(3.5rem,16dvh)] z-40 flex animate-card-in flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl md:inset-y-0 md:left-auto md:right-0 md:top-0 md:w-[497px] md:rounded-none md:rounded-l-3xl"
         aria-label={book.title}
@@ -33,7 +33,7 @@ export function BookPanel({ book }: { book: BookInfo }) {
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold tracking-wide text-muted">КІТАП ТУРАЛЫ</p>
             <Link
-              href="/"
+              href="/library"
               scroll={false}
               aria-label="Жабу"
               className="flex size-[30px] items-center justify-center rounded-full bg-chip transition-colors hover:bg-line"
@@ -43,7 +43,7 @@ export function BookPanel({ book }: { book: BookInfo }) {
           </div>
 
           <header className="mt-5 flex gap-4">
-            <BookCover cover={book.cover} className="h-[130px] w-[100px] shrink-0 rounded-xl md:h-[150px] md:w-[117px]" />
+            <BookCover cover={book.cover} className="h-[150px] w-[100px] shrink-0 rounded-xl md:h-[176px] md:w-[117px]" />
             <div className="flex min-w-0 flex-col">
               <p className="mb-2.5 flex flex-wrap gap-2 text-[13px] font-medium md:text-base">
                 <span className="rounded-lg bg-[#ffe3a3] px-2.5 py-0.5 text-amber-900">{book.level}</span>
@@ -131,7 +131,7 @@ export function BookPanel({ book }: { book: BookInfo }) {
           </section>
 
           <p className="mt-4 rounded-xl border border-line p-3 text-xs text-muted">
-            Демо-мәтін: сөз аудармалары әлі тексеріліп жатыр.
+            Сөз аудармалары әлі тексеріліп жатыр. Қате көрсеңіз, бізге жазыңыз.
           </p>
         </div>
 
