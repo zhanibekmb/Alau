@@ -1,6 +1,6 @@
-import { and, desc, eq, gt, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import type { Database } from "../db";
-import { entitlements, paywallEvents, user } from "../db/schema";
+import { entitlements, paywallEvents, readingProgress, savedWords, user } from "../db/schema";
 import type { EntitlementKind } from "./access";
 import { findPremiumPlan, premiumExpiresAt } from "./plans";
 
@@ -63,37 +63,6 @@ export async function grantAccess(
 /** Access the admin may take back: given by hand, or from the demo paywall. Real purchases never. */
 const REVOCABLE = ["demo", "manual"] as const;
 
-export type ManualGrant = {
-  id: string;
-  source: (typeof REVOCABLE)[number];
-  email: string;
-  kind: EntitlementKind;
-  work: string | null;
-  startsAt: Date;
-  expiresAt: Date | null;
-  createdAt: Date;
-};
-
-/** The latest hand-given and demo access, newest first, for the admin table. */
-export async function listManualGrants(db: Database, limit = 100): Promise<ManualGrant[]> {
-  return db
-    .select({
-      id: entitlements.id,
-      source: entitlements.source,
-      email: user.email,
-      kind: entitlements.kind,
-      work: entitlements.work,
-      startsAt: entitlements.startsAt,
-      expiresAt: entitlements.expiresAt,
-      createdAt: entitlements.createdAt,
-    })
-    .from(entitlements)
-    .innerJoin(user, eq(user.id, entitlements.userId))
-    .where(inArray(entitlements.source, [...REVOCABLE]))
-    .orderBy(desc(entitlements.createdAt))
-    .limit(limit);
-}
-
 /** Removes one hand-given or demo access. */
 export async function revokeGrant(db: Database, id: string): Promise<boolean> {
   const removed = await db
@@ -102,6 +71,33 @@ export async function revokeGrant(db: Database, id: string): Promise<boolean> {
     .returning({ id: entitlements.id });
   return removed.length > 0;
 }
+
+// ---- Admin lists: search by email, filters, 25 rows a page (the database does the paging). ----
+
+export const PAGE_SIZE = 25;
+
+export type Page<T> = { rows: T[]; total: number; page: number; pages: number };
+
+/** "%text%" for ILIKE, with %, _ and \ in the search taken literally. */
+function likePattern(query: string): string {
+  return `%${query.trim().toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+function paged<T>(rows: (T & { total: number })[], page: number): Page<T> {
+  const total = rows[0]?.total ?? 0;
+  return {
+    rows: rows.map((row) => {
+      const copy: Partial<T & { total: number }> = { ...row };
+      delete copy.total;
+      return copy as T;
+    }),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  };
+}
+
+const offset = (page: number) => (Math.max(1, page) - 1) * PAGE_SIZE;
 
 export type PlanRequest = {
   userId: string;
@@ -113,54 +109,145 @@ export type PlanRequest = {
   granted: boolean;
 };
 
+export type RequestFilter = { query?: string; status?: "pending" | "granted" | "all"; page?: number; now: Date };
+
 /**
- * Readers who chose a tariff (plan_chosen events), newest first, one row per reader and tariff.
+ * Readers who chose a tariff (plan_chosen events), newest first, one row per reader and tariff
+ * (a book request per work; premium the same whichever book it came from).
  * In PAYMENTS_MODE=transfer these are the people who may have sent money.
  */
-export async function listPlanRequests(db: Database, now: Date, limit = 50): Promise<PlanRequest[]> {
-  const events = await db
+export async function listPlanRequests(db: Database, filter: RequestFilter): Promise<Page<PlanRequest>> {
+  const page = Math.max(1, filter.page ?? 1);
+  const status = filter.status ?? "all";
+  const query = filter.query?.trim() ?? "";
+  const { rows } = await db.execute<PlanRequest & { total: number }>(sql`
+    with latest as (
+      select distinct on (e.user_id, e.plan, case when e.plan = 'single_book' then e.work end)
+        e.user_id, e.plan, case when e.plan = 'single_book' then e.work end as work, e.created_at
+      from ${paywallEvents} e
+      where e.type = 'plan_chosen' and e.plan is not null and e.user_id is not null
+      order by e.user_id, e.plan, case when e.plan = 'single_book' then e.work end, e.created_at desc
+    ),
+    marked as (
+      select l.user_id, l.plan, l.work, l.created_at, u.email,
+        exists (
+          select 1 from ${entitlements} x
+          where x.user_id = l.user_id
+            and ((x.kind <> 'single_book' and x.expires_at > ${filter.now.toISOString()})
+              or (l.plan = 'single_book' and x.kind = 'single_book' and x.work = l.work))
+        ) as granted
+      from latest l join ${user} u on u.id = l.user_id
+      where ${query === "" ? sql`true` : sql`u.email ilike ${likePattern(query)}`}
+    )
+    select user_id as "userId", email, plan, work, created_at as "at", granted, count(*) over()::int as total
+    from marked
+    where ${status === "pending" ? sql`not granted` : status === "granted" ? sql`granted` : sql`true`}
+    order by created_at desc
+    limit ${PAGE_SIZE} offset ${offset(page)}
+  `);
+  return paged(
+    rows.map((r) => ({ ...r, at: new Date(r.at) })),
+    page,
+  );
+}
+
+export type ManualGrant = {
+  id: string;
+  source: (typeof REVOCABLE)[number];
+  email: string;
+  kind: EntitlementKind;
+  work: string | null;
+  startsAt: Date;
+  expiresAt: Date | null;
+  createdAt: Date;
+};
+
+export type GrantFilter = {
+  query?: string;
+  source?: "manual" | "demo" | "all";
+  status?: "active" | "expired" | "all";
+  page?: number;
+  now: Date;
+};
+
+/** Hand-given and demo access, newest first. */
+export async function listManualGrants(db: Database, filter: GrantFilter): Promise<Page<ManualGrant>> {
+  const page = Math.max(1, filter.page ?? 1);
+  const query = filter.query?.trim() ?? "";
+  const source = filter.source && filter.source !== "all" ? [filter.source] : [...REVOCABLE];
+  const active = sql`(${entitlements.kind} = 'single_book' or ${entitlements.expiresAt} > ${filter.now.toISOString()})`;
+  const rows = await db
     .select({
-      userId: paywallEvents.userId,
+      id: entitlements.id,
+      source: entitlements.source,
       email: user.email,
-      plan: paywallEvents.plan,
-      work: paywallEvents.work,
-      at: paywallEvents.createdAt,
+      kind: entitlements.kind,
+      work: entitlements.work,
+      startsAt: entitlements.startsAt,
+      expiresAt: entitlements.expiresAt,
+      createdAt: entitlements.createdAt,
+      total: sql<number>`count(*) over()::int`,
     })
-    .from(paywallEvents)
-    .innerJoin(user, eq(user.id, paywallEvents.userId))
-    .where(and(eq(paywallEvents.type, "plan_chosen"), isNotNull(paywallEvents.plan)))
-    .orderBy(desc(paywallEvents.createdAt))
-    .limit(limit * 4);
+    .from(entitlements)
+    .innerJoin(user, eq(user.id, entitlements.userId))
+    .where(
+      and(
+        inArray(entitlements.source, source),
+        query === "" ? undefined : sql`${user.email} ilike ${likePattern(query)}`,
+        filter.status === "active" ? active : filter.status === "expired" ? sql`not ${active}` : undefined,
+      ),
+    )
+    .orderBy(desc(entitlements.createdAt))
+    .limit(PAGE_SIZE)
+    .offset(offset(page));
+  return paged(rows as (ManualGrant & { total: number })[], page);
+}
 
-  const seen = new Set<string>();
-  const latest = events.filter((e) => {
-    // A book request is per work; premium requests are the same whichever book they came from.
-    const key = `${e.userId}|${e.plan}|${e.plan === "single_book" ? e.work : ""}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, limit);
+export type Reader = {
+  id: string;
+  email: string;
+  createdAt: Date;
+  /** End of the latest active premium, if any. */
+  premiumUntil: Date | null;
+  books: number;
+  words: number;
+  lastRead: Date | null;
+};
 
-  const userIds = [...new Set(latest.map((e) => e.userId!))];
-  const owned =
-    userIds.length === 0
-      ? []
-      : await db
-          .select({ userId: entitlements.userId, kind: entitlements.kind, work: entitlements.work, expiresAt: entitlements.expiresAt })
-          .from(entitlements)
-          .where(inArray(entitlements.userId, userIds));
+export type ReaderFilter = { query?: string; access?: "paid" | "free" | "all"; page?: number; now: Date };
 
-  return latest.map((e) => {
-    const mine = owned.filter((o) => o.userId === e.userId);
-    const premium = mine.some((o) => o.kind !== "single_book" && o.expiresAt !== null && o.expiresAt > now);
-    const book = e.plan === "single_book" && mine.some((o) => o.kind === "single_book" && o.work === e.work);
-    return {
-      userId: e.userId!,
-      email: e.email,
-      plan: e.plan!,
-      work: e.plan === "single_book" ? e.work : null,
-      at: e.at,
-      granted: premium || book,
-    };
-  });
+/** Every account, newest first, with what it can read and how active it is. */
+export async function listReaders(db: Database, filter: ReaderFilter): Promise<Page<Reader>> {
+  const page = Math.max(1, filter.page ?? 1);
+  const query = filter.query?.trim() ?? "";
+  const now = filter.now.toISOString();
+  const { rows } = await db.execute<Reader & { total: number }>(sql`
+    with readers as (
+      select u.id, u.email, u.created_at,
+        (select max(x.expires_at) from ${entitlements} x
+          where x.user_id = u.id and x.kind <> 'single_book' and x.expires_at > ${now}) as premium_until,
+        (select count(*)::int from ${entitlements} x where x.user_id = u.id and x.kind = 'single_book') as books,
+        (select count(*)::int from ${savedWords} w where w.user_id = u.id) as words,
+        (select max(p.updated_at) from ${readingProgress} p where p.user_id = u.id) as last_read
+      from ${user} u
+      where ${query === "" ? sql`true` : sql`u.email ilike ${likePattern(query)}`}
+    )
+    select id, email, created_at as "createdAt", premium_until as "premiumUntil", books, words,
+      last_read as "lastRead", count(*) over()::int as total
+    from readers
+    where ${
+      filter.access === "paid"
+        ? sql`premium_until is not null or books > 0`
+        : filter.access === "free"
+          ? sql`premium_until is null and books = 0`
+          : sql`true`
+    }
+    order by created_at desc
+    limit ${PAGE_SIZE} offset ${offset(page)}
+  `);
+  const date = (v: Date | string | null) => (v === null ? null : new Date(v));
+  return paged(
+    rows.map((r) => ({ ...r, createdAt: new Date(r.createdAt), premiumUntil: date(r.premiumUntil), lastRead: date(r.lastRead) })),
+    page,
+  );
 }

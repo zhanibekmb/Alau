@@ -20,8 +20,8 @@ const fieldClass =
 
 function Frame({ title, lead, children }: { title: string; lead: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex w-full max-w-[420px] flex-col px-4 pb-10 pt-8 md:pt-16">
-      <Mascot className="size-20" />
+    <div className="mx-auto flex w-full max-w-[420px] flex-col px-5">
+      <Mascot className="size-20 lg:hidden" />
       <h1 className="mt-4 text-3xl font-bold">{title}</h1>
       <p className="mt-1 text-muted">{lead}</p>
       {children}

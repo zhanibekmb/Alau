@@ -34,14 +34,20 @@ export type MascotPose =
   | "subscription";
 
 /** The flame character from the Figma file (public/mascots, 512 px WebP). Decorative: no alt text. */
-export function Mascot({ pose = "onboarding-login", className = "" }: { pose?: MascotPose; className?: string }) {
+export function Mascot({ pose = "onboarding-login", className = "", eager = false }: {
+  pose?: MascotPose;
+  className?: string;
+  /** For a large mascot in the first screen (the sign-in panel), so it is not lazy-loaded. */
+  eager?: boolean;
+}) {
   return (
     <Image
       src={`/mascots/${pose}.webp`}
       alt=""
       width={512}
       height={512}
-      sizes="160px"
+      sizes={eager ? "256px" : "160px"}
+      loading={eager ? "eager" : undefined}
       className={`object-contain ${className}`}
     />
   );

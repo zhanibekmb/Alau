@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { grantAction, type GrantState } from "./actions";
 
 /** "Give access" form. Works can be bought separately; premium opens every book. */
-export function GrantForm({ works }: { works: { work: string; title: string }[] }) {
+export function GrantForm({ works, defaultEmail = "" }: { works: { work: string; title: string }[]; defaultEmail?: string }) {
   const [state, action, pending] = useActionState<GrantState, FormData>(grantAction, null);
 
   return (
@@ -17,6 +17,8 @@ export function GrantForm({ works }: { works: { work: string; title: string }[] 
             type="email"
             required
             placeholder="reader@example.kz"
+            defaultValue={defaultEmail}
+            autoFocus={Boolean(defaultEmail)}
             className="mt-1.5 h-11 w-full rounded-xl border border-line bg-white px-3 outline-accent"
           />
         </label>
