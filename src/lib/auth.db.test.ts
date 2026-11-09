@@ -128,3 +128,50 @@ describe("signup event (counted on /admin/paywall)", () => {
     expect(events[0]).toMatchObject({ type: "signup", userId: created.id });
   });
 });
+
+describe("password reset", () => {
+  const sent: { email: string; url: string }[] = [];
+  const resetAuth = () =>
+    createAuth(db, {
+      secret: "test-secret-that-is-long-enough-0123456789",
+      baseURL: ORIGIN,
+      sendResetEmail: async (data) => {
+        sent.push(data);
+      },
+    });
+  const call = (instance: Auth, path: string, body: object, cookie?: string) =>
+    instance.handler(
+      new Request(`${ORIGIN}/api/auth${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: ORIGIN, "x-forwarded-for": freshIp(), ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      }),
+    );
+
+  it("emails a one-time link that sets a new password and signs out other devices", async () => {
+    sent.length = 0;
+    const instance = resetAuth();
+    const signedUp = await call(instance, "/sign-up/email", { email: "reset@example.kz", password: "old-password-1", name: "reset" });
+    const oldCookie = (signedUp.headers.get("set-cookie") ?? "").split(";")[0];
+
+    expect((await call(instance, "/request-password-reset", { email: "reset@example.kz", redirectTo: "/reset-password" })).status).toBe(200);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].email).toBe("reset@example.kz");
+    const token = sent[0].url.split("/reset-password/")[1].split("?")[0];
+    expect(token.length).toBeGreaterThan(10);
+
+    expect((await call(instance, "/reset-password", { newPassword: "new-password-2", token })).status).toBe(200);
+    expect((await call(instance, "/sign-in/email", { email: "reset@example.kz", password: "old-password-1" })).status).toBe(401);
+    expect((await call(instance, "/sign-in/email", { email: "reset@example.kz", password: "new-password-2" })).status).toBe(200);
+    expect(await instance.api.getSession({ headers: new Headers({ cookie: oldCookie }) })).toBeNull();
+    // The link works once.
+    expect((await call(instance, "/reset-password", { newPassword: "third-password-3", token })).status).not.toBe(200);
+  });
+
+  it("answers the same for an unknown email and sends nothing", async () => {
+    sent.length = 0;
+    const response = await call(resetAuth(), "/request-password-reset", { email: "nobody@example.kz", redirectTo: "/reset-password" });
+    expect(response.status).toBe(200);
+    expect(sent).toHaveLength(0);
+  });
+});

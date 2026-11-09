@@ -7,6 +7,7 @@ import type { EntitlementKind } from "@/lib/access";
 import { getAnonId } from "@/lib/anon-id";
 import { PREMIUM_PLANS, SINGLE_BOOK_TITLE } from "@/lib/plans";
 import type { BookInfo } from "@/lib/types";
+import { LEGAL } from "@/content/legal";
 import { Mascot } from "../brand";
 import { CheckIcon } from "../icons";
 
@@ -111,6 +112,13 @@ export function Paywall({
         <h2 className="text-2xl font-bold">Рақмет!</h2>
         <p className="max-w-sm text-[var(--r-muted)]">
           Таңдауыңызды сақтадық. Төлем жақында ашылады, сонда осы кітапты бірден жалғастыра аласыз.
+        </p>
+        {/* Testers get early access by hand on /admin/paywall. */}
+        <p className="max-w-sm text-sm text-[var(--r-muted)]">
+          Ерте қолжетімділік керек болса, жазыңыз:{" "}
+          <a href={`mailto:${LEGAL.contactEmail}`} className="font-medium text-amber-700 underline underline-offset-2">
+            {LEGAL.contactEmail}
+          </a>
         </p>
         <Link href="/" className="mt-2 rounded-2xl border border-[var(--r-line)] px-5 py-3 font-medium">
           Кітапханаға оралу

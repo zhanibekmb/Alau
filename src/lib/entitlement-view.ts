@@ -8,6 +8,8 @@ export type EntitlementView = {
   /** ISO date; null for a book bought forever. */
   expiresAt: string | null;
   demo: boolean;
+  /** Given by an admin on /admin/paywall (tester access or a transfer). */
+  manual: boolean;
 };
 
 /** Same rule as the server (unlocksWork), applied to what the browser received. */

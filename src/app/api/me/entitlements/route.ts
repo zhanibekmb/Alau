@@ -19,6 +19,7 @@ export async function GET() {
       workTitle: row.work ? (findPaidWork(row.work)?.title ?? row.work) : null,
       expiresAt: row.expiresAt?.toISOString() ?? null,
       demo: row.source === "demo",
+      manual: row.source === "manual",
     }));
     return Response.json({ entitlements }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

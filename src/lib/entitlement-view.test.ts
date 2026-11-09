@@ -7,14 +7,14 @@ const book: EntitlementView = {
   work: "secret-of-lake-bakaly",
   workTitle: "The Secret of Lake Bakaly",
   expiresAt: null,
-  demo: true,
+  demo: true, manual: false,
 };
 const premium = (expiresAt: string): EntitlementView => ({
   kind: "premium_monthly",
   work: null,
   workTitle: null,
   expiresAt,
-  demo: true,
+  demo: true, manual: false,
 });
 
 describe("viewUnlocksWork (lock icons in the chapter menu)", () => {

@@ -3,9 +3,10 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { getDb, type Database } from "../db";
 import * as schema from "../db/schema";
+import { passwordResetMail, sendMail } from "./mail";
 
-// Sign-up and sign-in with email and password (plan decision D3). Everything stays in our
-// own PostgreSQL; no outside service sees the reader's email.
+// Sign-up and sign-in with email and password (plan decision D3). Accounts live in our own
+// PostgreSQL; the only outside service that sees an email is Brevo, when it sends a reset link.
 
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
@@ -19,7 +20,16 @@ export class MissingAuthSecretError extends Error {
   }
 }
 
-export function createAuth(db: Database, options: { secret: string; baseURL?: string }) {
+export type ResetEmailSender = (data: { email: string; url: string }) => Promise<void>;
+
+/** Sends the reset link by email (src/lib/mail.ts). Tests pass their own sender instead. */
+const sendResetEmail: ResetEmailSender = ({ email, url }) => sendMail(passwordResetMail(email, url));
+
+export function createAuth(
+  db: Database,
+  options: { secret: string; baseURL?: string; sendResetEmail?: ResetEmailSender },
+) {
+  const sendReset = options.sendResetEmail ?? sendResetEmail;
   return betterAuth({
     database: drizzleAdapter(db, { provider: "pg", schema }),
     secret: options.secret,
@@ -29,6 +39,12 @@ export function createAuth(db: Database, options: { secret: string; baseURL?: st
       minPasswordLength: PASSWORD_MIN_LENGTH,
       maxPasswordLength: PASSWORD_MAX_LENGTH,
       autoSignIn: true,
+      // "Құпиясөзді ұмыттым": a one-hour link by email; a new password signs out every device.
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, url }) => {
+        await sendReset({ email: user.email, url });
+      },
     },
     rateLimit: {
       // On in every environment, so tests and local runs behave like production.

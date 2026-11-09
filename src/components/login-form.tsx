@@ -143,7 +143,9 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
         </button>
       </p>
       {mode === "sign-in" && (
-        <p className="mt-3 text-center text-xs text-muted">Құпиясөзді қалпына келтіру әзірге жоқ, оны есте сақтаңыз.</p>
+        <Link href="/forgot-password" className="mt-3 text-center text-sm text-muted underline underline-offset-2 hover:text-ink">
+          Құпиясөзді ұмыттыңыз ба?
+        </Link>
       )}
     </div>
   );

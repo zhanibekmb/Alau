@@ -12,7 +12,7 @@ export async function loadEntitlements(db: Database, userId: string): Promise<En
 }
 
 /** What the reader's own screens show: also where each purchase came from. */
-export type ReaderEntitlement = Entitlement & { source: "demo"; startsAt: Date };
+export type ReaderEntitlement = Entitlement & { source: (typeof entitlements.$inferSelect)["source"]; startsAt: Date };
 
 export async function listReaderEntitlements(db: Database, userId: string): Promise<ReaderEntitlement[]> {
   return db

@@ -51,7 +51,10 @@ function usePlan() {
   return {
     signedIn,
     now,
-    premium: active.filter((item) => item.kind !== "single_book"),
+    // The one that ends last first: after an extension that is the term the reader cares about.
+    premium: active
+      .filter((item) => item.kind !== "single_book")
+      .sort((a, b) => (b.expiresAt ?? "").localeCompare(a.expiresAt ?? "")),
     books: active.filter((item) => item.kind === "single_book"),
   };
 }
@@ -182,9 +185,12 @@ function PremiumInfo({ item, now }: { item: EntitlementView; now: Date }) {
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        {item.demo ? (
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70" title="Демо режим: нақты төлем болған жоқ">
-            демо
+        {item.demo || item.manual ? (
+          <span
+            className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70"
+            title={item.demo ? "Демо режим: нақты төлем болған жоқ" : "Әкімші қолмен берген"}
+          >
+            {item.demo ? "демо" : "қолмен берілді"}
           </span>
         ) : (
           <span />

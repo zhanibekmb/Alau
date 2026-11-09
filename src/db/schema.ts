@@ -27,8 +27,8 @@ export * from "./auth-schema";
 
 /** single_book never expires; premium has expires_at. */
 export const entitlementKind = pgEnum("entitlement_kind", ["single_book", "premium_monthly", "premium_annual"]);
-/** Where the access came from. Only "demo" exists until real payments. */
-export const entitlementSource = pgEnum("entitlement_source", ["demo"]);
+/** Where the access came from: "demo" from the demo paywall, "manual" given by an admin on /admin/paywall. */
+export const entitlementSource = pgEnum("entitlement_source", ["demo", "manual"]);
 export const paywallEventType = pgEnum("paywall_event_type", ["paywall_shown", "plan_chosen", "signup", "demo_unlock"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull();

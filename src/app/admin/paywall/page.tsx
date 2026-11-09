@@ -5,9 +5,13 @@ import { connection } from "next/server";
 import { getDb } from "@/db";
 import type { EntitlementKind } from "@/lib/access";
 import { isAdminEmail } from "@/lib/admin";
-import { findEdition } from "@/lib/catalog";
+import { findEdition, findPaidWork, listPaidWorks } from "@/lib/catalog";
+import { formatKkDate } from "@/lib/kk-date";
+import { listManualGrants, type ManualGrant } from "@/lib/manual-access";
 import { getCurrentUser } from "@/lib/dal";
 import { loadPaywallStats, type PaywallStats } from "@/lib/paywall-stats";
+import { revokeAction } from "./actions";
+import { GrantForm } from "./grant-form";
 
 // Paywall results for the team (docs/paywall-plan.md, D11 and T8). Only emails in ADMIN_EMAILS.
 //
@@ -35,7 +39,8 @@ export default async function PaywallResultsPage() {
     notFound();
   }
 
-  const [week, month] = await loadPeriods();
+  const [[week, month], grants] = await Promise.all([loadPeriods(), listManualGrants(getDb())]);
+  const works = listPaidWorks().map(({ work, title }) => ({ work, title }));
   const periods: [string, PaywallStats][] = [
     ["7 күн", week],
     ["30 күн", month],
@@ -51,7 +56,17 @@ export default async function PaywallResultsPage() {
         Адам — аккаунт немесе кірмеген браузер. «Тариф таңдады»: interest режиміндегі таңдау немесе демо ашу.
       </p>
 
-      <div className="mt-6 overflow-x-auto">
+      <section className="mt-8" aria-labelledby="grant-title">
+        <h2 id="grant-title" className="text-xl font-bold">
+          Қолмен қолжетімділік беру
+        </h2>
+        <p className="mt-1 text-sm text-muted">Тестерлерге тегін немесе аударма арқылы төлегендерге.</p>
+        <GrantForm works={works} />
+        <GrantsTable grants={grants} />
+      </section>
+
+      <h2 className="mt-10 text-xl font-bold">Пэйволл көрсеткіштері</h2>
+      <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[480px] text-left text-sm">
           <thead className="text-muted">
             <tr className="border-b border-line">
@@ -112,6 +127,53 @@ export default async function PaywallResultsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+function GrantsTable({ grants }: { grants: ManualGrant[] }) {
+  if (grants.length === 0) return <p className="mt-4 text-sm text-muted">Берілген қолжетімділік әлі жоқ.</p>;
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <table className="w-full min-w-[560px] text-left text-sm">
+        <thead className="text-muted">
+          <tr className="border-b border-line">
+            <th className="py-2 pr-4 font-medium">Оқырман</th>
+            <th className="py-2 pr-4 font-medium">Не берілді</th>
+            <th className="py-2 pr-4 font-medium">Қайдан</th>
+            <th className="py-2 pr-4 font-medium">Мерзімі</th>
+            <th className="py-2 pr-4 font-medium">Берілген күні</th>
+            <th className="py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {grants.map((grant) => (
+            <tr key={grant.id} className="border-b border-line">
+              <td className="py-2 pr-4">{grant.email}</td>
+              <td className="py-2 pr-4">
+                {grant.work ? `Кітап: ${findPaidWork(grant.work)?.title ?? grant.work}` : PLAN_NAMES[grant.kind]}
+              </td>
+              <td className="py-2 pr-4">
+                <span className={`rounded-full px-2 py-0.5 text-xs ${grant.source === "demo" ? "bg-chip text-muted" : "bg-accent-soft text-amber-800"}`}>
+                  {grant.source === "demo" ? "демо" : "қолмен"}
+                </span>
+              </td>
+              <td className="py-2 pr-4">
+                {grant.expiresAt ? `${formatKkDate(grant.startsAt)} – ${formatKkDate(grant.expiresAt)}` : "мерзімсіз"}
+              </td>
+              <td className="py-2 pr-4 text-muted">{formatKkDate(grant.createdAt)}</td>
+              <td className="py-2 text-right">
+                <form action={revokeAction}>
+                  <input type="hidden" name="id" value={grant.id} />
+                  <button type="submit" className="rounded-lg px-2 py-1 text-red-700 hover:bg-red-50">
+                    Қайтарып алу
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

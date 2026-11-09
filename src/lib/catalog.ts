@@ -32,3 +32,9 @@ export function findAvailableBook(slug: string, now: Date): BookInfo | null {
   const edition = findEdition(slug);
   return edition && isLicenseValid(edition.source.license, now) ? edition.info : null;
 }
+
+/** Every work that can be bought, once each (for the admin's "give access" form). */
+export function listPaidWorks(editions: Edition[] = EDITIONS): PaidWork[] {
+  const works = [...new Set(editions.filter((e) => e.info.paywall).map((e) => e.info.work))];
+  return works.map((work) => findPaidWork(work, editions)!).filter(Boolean);
+}
