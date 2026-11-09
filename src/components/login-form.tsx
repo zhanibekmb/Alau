@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -112,6 +113,20 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
         >
           {busy ? text.busy : text.submit}
         </button>
+
+        {mode === "sign-up" && (
+          <p className="text-center text-xs leading-relaxed text-muted">
+            «Аккаунт ашу» батырмасын басу арқылы сіз{" "}
+            <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-ink">
+              Пайдалану шарттарымен
+            </Link>{" "}
+            келісесіз және{" "}
+            <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-ink">
+              Құпиялылық саясатына
+            </Link>{" "}
+            сәйкес дербес деректеріңізді өңдеуге келісім бересіз.
+          </p>
+        )}
       </form>
 
       <p className="mt-5 text-center text-sm">

@@ -250,6 +250,15 @@ function Settings({ goalRef }: { goalRef: RefObject<HTMLSelectElement | null> })
         >
           Осы браузердегі деректерді өшіру
         </button>
+        <p className="mt-3 text-sm text-muted">
+          <Link href="/terms" className="hover:text-ink hover:underline">
+            Пайдалану шарттары
+          </Link>
+          {" · "}
+          <Link href="/privacy" className="hover:text-ink hover:underline">
+            Құпиялылық саясаты
+          </Link>
+        </p>
       </div>
     </section>
   );
