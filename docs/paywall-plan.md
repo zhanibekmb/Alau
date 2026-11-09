@@ -294,9 +294,10 @@ E2E (Playwright, десктоп и 360 px): гость читает до кул�
   - Файлы: `src/components/reader/paywall.tsx` (три тарифа, Premium на месяц выбран заранее; гость → регистрация с возвратом на ту же главу), `src/components/reader/reader.tsx`, `src/components/reader/panels.tsx` (замок у платных глав, если произведение не куплено), `src/components/account.tsx` (`TariffCard` в профиле), `src/app/api/me/entitlements/route.ts`, `src/lib/entitlement-view.ts`, `src/lib/use-entitlements.ts`, `src/lib/anon-id.ts`, `src/components/icons.tsx` (`LockIcon`).
   - Тесты: `entitlement-view.test.ts`, `listReaderEntitlements` в `entitlements.db.test.ts`.
   - Проверено в браузере (демо-режим): гость → пэйволл → регистрация → возврат на гл. 7 → «Осы кітап» → глава открылась без перезагрузки; замки в меню; тариф в профиле; 360 px. Сообщение режима interest («Төлем жақында ашылады») проверено только тестами логики, на экране не смотрели.
-- [ ] **T6b (P1, human: ~3 ч / CC: ~20 мин)** — E2E — Playwright, два теста (E3B).
-  - Файлы: `playwright.config.ts`, `e2e/paywall.spec.ts`, `package.json`.
-  - Проверка: `npx playwright test` на десктопе и 360 px.
+- [x] **T6b (P1, human: ~3 ч / CC: ~20 мин)** — E2E — Playwright, два теста (E3B). Сделано 2026-11-09.
+  - Файлы: `playwright.config.ts` (проекты desktop и phone-360, использует уже запущенный dev-сервер), `e2e/paywall.spec.ts`, `e2e/global-teardown.ts` (удаляет `e2e+…@example.kz` и их события), `package.json` (`npm run test:e2e`), `.gitignore`.
+  - Нужны PostgreSQL, `.env` и `PAYMENTS_MODE=demo`.
+  - Проверка: `npm run test:e2e` → 3 passed, 1 skipped (проверка кэша идёт только на desktop). Во время отладки выяснилось: Better Auth не принимает выход без заголовка `Origin`, поэтому API-запросы в тесте его отправляют.
 
 ### PR 2: данные читателя и результаты
 
