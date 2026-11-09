@@ -185,7 +185,7 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
               {visible.length === 0 ? (
                 <p className="mt-8 text-center font-semibold">Ештеңе табылмады</p>
               ) : (
-                <ul className="mt-5 flex flex-col gap-4 md:max-h-[calc(100dvh-300px)] md:overflow-y-auto md:pr-2">
+                <ul className="mt-4 flex flex-col gap-4 md:-mx-1 md:max-h-[calc(100dvh-300px)] md:overflow-y-auto md:px-1 md:py-1 md:pr-3">
                   {visible.map((word) => {
                     const active = shown?.id === word.id;
                     const learned = (reviews[word.id]?.box ?? 0) >= LEARNED_BOX;
