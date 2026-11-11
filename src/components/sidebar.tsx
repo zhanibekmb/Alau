@@ -36,7 +36,7 @@ export function Sidebar() {
     <>
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[var(--sidebar-w)] flex-col bg-sidebar px-5 py-10 transition-[width,padding] duration-300 collapsed:px-3 md:flex">
         <div className="flex items-center justify-between gap-2 collapsed:flex-col collapsed:gap-5">
-          <Link href="/library" className="px-1 text-5xl collapsed:px-0" aria-label="Alau">
+          <Link href="/" className="px-1 text-5xl collapsed:px-0" aria-label="Alau басты беті" title="Басты бет">
             <Logo className="collapsed:hidden" />
             <Flame className="hidden size-11 collapsed:block" />
           </Link>

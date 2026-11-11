@@ -17,7 +17,10 @@ export function PhoneHeader({ title, children }: { title: string; children: Reac
     <header className="md:hidden">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{title}</h1>
-        <Flame className="size-[30px] shrink-0" />
+        {/* The flame leads to the landing page, like the logo in the desktop sidebar. */}
+        <Link href="/" aria-label="Alau басты беті" className="-m-2 shrink-0 p-2">
+          <Flame className="size-[30px]" />
+        </Link>
       </div>
       <p className="mt-[15px] text-sm leading-[19px] text-muted">{children}</p>
     </header>

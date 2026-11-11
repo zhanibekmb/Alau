@@ -5,16 +5,16 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { BookCover } from "@/components/book-card";
 import { Flame, Logo, Mascot, type MascotPose } from "@/components/brand";
-import { DictionaryIcon } from "@/components/icons";
 import { LandingHeaderCta } from "@/components/landing-cta";
 import { Carousel, Reasons } from "@/components/landing-interactive";
+import { Phone, type PhoneShot } from "@/components/landing-phone";
 import { LEGAL } from "@/content/legal";
 import { listAvailableBooks, listPaidWorks } from "@/lib/catalog";
 import { PREMIUM_PLANS } from "@/lib/plans";
 import { LEVEL_TITLES, LEVELS } from "@/lib/types";
 
 // The landing page at "/" (the library lives at /library). Built after the structure of
-// busuu.com, in Alau's colours (amber, navy #201f4b, cream): a bright hero with a changing word,
+// busuu.com, in Alau's colours (amber, navy #201f4b, cream): a bright hero with a changing word and real phone screenshots,
 // level pills, big numbers, a book carousel, three advantages, who it is for, a dark "why"
 // block, prices, questions, a final call and a ticker. Static except the books, which follow
 // license dates.
@@ -104,41 +104,49 @@ function ChangingWord({ words }: { words: string[] }) {
 }
 
 function Hero() {
+  const nav: [string, string][] = [
+    ["Кітаптар", "#books"],
+    ["Қалай жұмыс істейді", "#how"],
+    ["Тарифтер", "#prices"],
+    ["Сұрақтар", "#faq"],
+  ];
   return (
     <header className="relative overflow-hidden bg-gradient-to-br from-[#ffb627] via-[#f59e0b] to-[#f07f13]">
       {/* Big soft circle at the bottom right, the busuu "wave". */}
       <div className="pointer-events-none absolute -bottom-[45%] right-[-15%] size-[900px] rounded-full bg-[#ffd27a]/50" />
       <div className="pointer-events-none absolute -left-24 top-40 size-72 rounded-full bg-white/10" />
 
-      <Container className="relative flex h-20 items-center justify-between">
+      <Container className="relative flex h-20 items-center justify-between gap-6">
         <Link href="/" className="text-3xl text-[#201f4b]" aria-label="Alau">
           <Logo />
         </Link>
+        <nav aria-label="Бөлімдер" className="hidden items-center gap-8 font-bold text-[#201f4b]/80 lg:flex">
+          {nav.map(([label, href]) => (
+            <a key={href} href={href} className="transition-colors hover:text-[#201f4b]">
+              {label}
+            </a>
+          ))}
+        </nav>
         <LandingHeaderCta />
       </Container>
 
-      <Container className="relative grid items-center gap-10 pb-24 pt-6 md:pb-32 md:pt-10 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="text-center lg:text-left">
-          <span className="inline-flex items-center justify-center rounded-2xl bg-white/90 p-2.5 shadow-md">
-            <Flame variant="color" className="size-9" />
-          </span>
-          <h1 className="mt-6 font-display text-[42px] font-black leading-[1.12] md:text-6xl xl:text-[68px]">
-            Ағылшынша <ChangingWord words={["оқы", "түсін", "сөйле", "ойла"]} />
-            <br className="hidden md:block" /> қазақ кітаптары арқылы
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg font-medium text-[#201f4b]/80 md:text-xl lg:mx-0">
-            Қазақ авторларының шығармалары ағылшын тілінде, A1-ден B2-ге дейін. Таныс емес сөзді бассаңыз — аудармасы бірден
-            шығады.
-          </p>
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <Link
-              href="/library"
-              className="rounded-full bg-[#201f4b] px-8 py-4 font-display text-lg font-extrabold text-white shadow-xl shadow-[#201f4b]/30 transition-transform hover:scale-[1.03]"
-            >
-              Тегін оқуды бастау
-            </Link>
-            <span className="text-sm font-semibold text-[#201f4b]/70">Тіркелусіз · карта керек емес</span>
-          </div>
+      <Container className="relative pt-8 text-center md:pt-12">
+        <h1 className="font-display text-[42px] font-black leading-[1.12] md:text-6xl xl:text-[68px]">
+          Ағылшынша <ChangingWord words={["оқы", "түсін", "сөйле", "ойла"]} />
+          <br className="hidden md:block" /> қазақ кітаптары арқылы
+        </h1>
+        <p className="mx-auto mt-6 max-w-xl text-lg font-medium text-[#201f4b]/80 md:text-xl">
+          Қазақ авторларының шығармалары ағылшын тілінде, A1-ден B2-ге дейін. Таныс емес сөзді бассаңыз — аудармасы бірден
+          шығады.
+        </p>
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <Link
+            href="/library"
+            className="rounded-full bg-[#201f4b] px-8 py-4 font-display text-lg font-extrabold text-white shadow-xl shadow-[#201f4b]/30 transition-transform hover:scale-[1.03]"
+          >
+            Тегін оқуды бастау
+          </Link>
+          <span className="text-sm font-semibold text-[#201f4b]/70">Тіркелусіз · карта керек емес</span>
         </div>
         <Phones />
       </Container>
@@ -147,65 +155,29 @@ function Hero() {
   );
 }
 
-/** Two phones: the reader with a tapped word, and a review card. Pictures, not live UI. */
+/**
+ * The three main things the reader does, each on a whole phone with a real screenshot of the app:
+ * tap a word, keep it, review it. A row on wide screens, a swipeable strip on a phone.
+ */
 function Phones() {
-  const frame = "absolute rounded-[38px] border-[7px] border-[#201f4b] bg-[#fcfbf7] shadow-2xl";
+  const steps: { shot: PhoneShot; title: string; text: string }[] = [
+    { shot: "reader", title: "Сөзді басыңыз", text: "Аудармасы мен айтылуы бірден шығады" },
+    { shot: "dictionary", title: "Сөздікке сақтаңыз", text: "Жаңа сөздер жеке сөздігіңізде жиналады" },
+    { shot: "review", title: "Қайталап, есте сақтаңыз", text: "Карточкалар ұмыта бастаған сөзді еске салады" },
+  ];
   return (
-    <div className="relative mx-auto h-[460px] w-full max-w-[460px] md:h-[520px]" aria-hidden="true">
-      <div className={`${frame} left-[6%] top-6 h-[400px] w-[220px] rotate-[-6deg] md:h-[450px] md:w-[240px]`}>
-        <div className="mx-auto mt-2 h-4 w-20 rounded-full bg-[#201f4b]" />
-        <div className="px-4 pt-3">
-          <p className="text-[10px] text-[#6e6e73]">The Little Foal · 1-тарау</p>
-          <div className="mt-1 h-1 rounded-full bg-[#e5e5ea]">
-            <div className="h-full w-1/3 rounded-full bg-[#f59e0b]" />
-          </div>
-          <p className="mt-4 font-serif text-[15px] font-semibold">A Cold Morning</p>
-          <p className="mt-2 font-serif text-[12.5px] leading-[1.8] text-[#111]">
-            Dana is ten years old. She lives in a small village in the{" "}
-            <span className="rounded bg-[#f59e0b]/45 px-0.5">steppe</span>. Her family has many horses.
+    <ol className="-mx-5 mt-12 flex snap-x snap-mandatory items-start gap-6 overflow-x-auto px-5 pb-28 text-left [scrollbar-width:none] md:mx-0 md:mt-16 md:justify-center md:gap-8 md:overflow-visible md:px-0 md:pb-32 lg:gap-12">
+      {steps.map((step, i) => (
+        <li key={step.shot} className="flex w-[calc(414px*var(--s))] shrink-0 snap-center flex-col [--s:0.64] max-md:first:ml-auto max-md:last:mr-auto md:[--s:0.5] lg:[--s:0.62] xl:[--s:0.68]">
+          <p className="flex items-center gap-2.5 font-display text-lg font-extrabold leading-tight md:max-lg:min-h-11">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#201f4b] text-base text-[#ffc24b]">{i + 1}</span>
+            {step.title}
           </p>
-          <div className="relative mt-3 rounded-2xl border border-[#e5e5ea] bg-white p-3 shadow-lg">
-            <p className="text-sm font-bold">
-              steppe <span className="text-[10px] font-normal text-[#6e6e73]">/step/ · зат есім</span>
-            </p>
-            <p className="text-sm">дала</p>
-            <p className="mt-2 inline-block rounded-lg bg-[#f59e0b] px-2 py-1 text-[10px] font-bold">Сөздікке сақтау</p>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-            <span className="flex items-center gap-1 rounded-full border border-[#e5e5ea] px-2 py-1 text-[10px] font-bold text-[#f59e0b]">
-              <DictionaryIcon className="size-3.5" />3
-            </span>
-            <span className="rounded-full bg-[#f59e0b] px-3 py-1 text-[10px] font-bold">Келесі →</span>
-          </div>
-        </div>
-      </div>
-      <div className={`${frame} right-[2%] top-24 h-[330px] w-[190px] rotate-[7deg] bg-white md:h-[370px] md:w-[210px]`}>
-        <div className="mx-auto mt-2 h-3.5 w-16 rounded-full bg-[#201f4b]" />
-        <div className="px-3 pt-3">
-          <div className="h-1.5 rounded-full bg-[#e5e5ea]">
-            <div className="h-full w-2/3 rounded-full bg-[#f59e0b]" />
-          </div>
-          <div className="mt-4 rounded-2xl bg-[#f4f3ee] p-4 text-center">
-            <p className="text-[10px] text-[#6e6e73]">зат есім</p>
-            <p className="mt-1 text-2xl font-black">foal</p>
-            <p className="mt-2 font-serif text-[10px] italic text-[#6e6e73]">«One horse has a new foal.»</p>
-            <div className="mt-3 border-t border-dashed border-[#e5e5ea] pt-2">
-              <p className="text-base font-bold text-amber-800">құлын</p>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-bold">
-            <span className="rounded-xl border-2 border-[#e5e5ea] py-2 text-center">Есімде жоқ</span>
-            <span className="rounded-xl bg-[#f59e0b] py-2 text-center">Білемін</span>
-          </div>
-        </div>
-      </div>
-      <Mascot
-        pose="reader-tooltip"
-        eager
-        className="motion-loop absolute -bottom-2 left-[38%] size-32 animate-[float_4s_ease-in-out_infinite] md:size-36"
-      />
-      <span className="absolute right-[8%] top-6 text-4xl">✨</span>
-    </div>
+          <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-[#201f4b]/75">{step.text}</p>
+          <Phone shot={step.shot} priority={i === 0} className="mt-5" />
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -326,7 +298,7 @@ function Advantages() {
     { pose: "mastered", tint: "bg-[#e9e7ff]", title: "Сөздер есте қалады", text: "Жеке сөздік пен ақылды қайталау ұмыта бастаған сөзді дер кезінде еске салады." },
   ];
   return (
-    <section className="pb-16 md:pb-24">
+    <section id="how" className="scroll-mt-6 pb-16 md:pb-24">
       <Container>
         <Heading>Alau артықшылықтары</Heading>
         <ul className="mt-10 grid gap-5 md:grid-cols-3">
@@ -345,13 +317,50 @@ function Advantages() {
   );
 }
 
+/** Line icons for the "who is it for" cards (24 px grid, 1.6 px stroke). */
+const WHO_ICONS = {
+  student: (
+    <>
+      <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+      <path d="M22 10v6" />
+      <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+    </>
+  ),
+  exam: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </>
+  ),
+  reader: (
+    <>
+      <path d="M12 7v14" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+    </>
+  ),
+  parent: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.870" />
+      <path d="M16 3.130a4 4 0 0 1 0 7.750" />
+    </>
+  ),
+};
+
 /** Who Alau is for. Use cases, not reviews: the site has no real reviews yet. */
 function ForWhom() {
-  const cards = [
-    { tone: "bg-[#fff1c9]", tag: "Студенттерге", icon: "🎓", text: "Сөздік қорды оқулықпен емес, қызықты кітаппен толықтыру." },
-    { tone: "bg-[#ece6ff]", tag: "IELTS-ке дайындалатындарға", icon: "📝", text: "Күн сайын ағылшынша оқу әдетін қалыптастырып, жылдам оқуға үйрену." },
-    { tone: "bg-[#dff5ea]", tag: "Кітап сүйетіндерге", icon: "📚", text: "Таныс қазақ шығармаларын ағылшын тілінде қайта ашу." },
-    { tone: "bg-[#ffe4dc]", tag: "Ата-аналарға", icon: "👨‍👩‍👧", text: "Балаға ағылшынды ана тіліндегі сюжеттер арқылы жақындату." },
+  const cards: { icon: keyof typeof WHO_ICONS; tint: string; title: string; text: string }[] = [
+    { icon: "student", tint: "bg-[#fff1d2] text-[#b45309]", title: "Студенттерге", text: "Сөздік қорды оқулықпен емес, қызықты кітаппен толықтыру." },
+    {
+      icon: "exam",
+      tint: "bg-[#e9e7ff] text-[#4f46a5]",
+      title: "IELTS-ке дайындалатындарға",
+      text: "Күн сайын ағылшынша оқу әдетін қалыптастырып, жылдам оқуға үйрену.",
+    },
+    { icon: "reader", tint: "bg-[#e6f6ec] text-[#1f7a4d]", title: "Кітап сүйетіндерге", text: "Таныс қазақ шығармаларын ағылшын тілінде қайта ашу." },
+    { icon: "parent", tint: "bg-[#ffe4dc] text-[#b4472a]", title: "Ата-аналарға", text: "Балаға ағылшынды ана тіліндегі сюжеттер арқылы жақындату." },
   ];
   return (
     <section className="pb-16 md:pb-24">
@@ -359,12 +368,23 @@ function ForWhom() {
         <Heading>Alau кімге арналған</Heading>
         <ul className="-mx-5 mt-10 flex snap-x gap-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-2 md:px-0 lg:grid-cols-4">
           {cards.map((card) => (
-            <li key={card.tag} className={`flex w-[280px] shrink-0 snap-start flex-col rounded-[28px] p-7 md:w-auto ${card.tone}`}>
-              <span className="text-4xl" aria-hidden="true">
-                {card.icon}
+            <li key={card.title} className="flex w-[280px] shrink-0 snap-start flex-col rounded-[28px] bg-[#f4f3ee] p-7 md:w-auto">
+              <span className={`flex size-14 items-center justify-center rounded-2xl ${card.tint}`}>
+                <svg
+                  viewBox="0 0 24 24"
+                  className="size-7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {WHO_ICONS[card.icon]}
+                </svg>
               </span>
-              <p className="mt-4 text-sm font-bold uppercase tracking-wider text-[#201f4b]/60">{card.tag}</p>
-              <p className="mt-3 font-display text-2xl font-black leading-snug">{card.text}</p>
+              <h3 className="mt-6 font-display text-xl font-extrabold leading-snug">{card.title}</h3>
+              <p className="mt-2 text-[#201f4b]/75">{card.text}</p>
             </li>
           ))}
         </ul>
