@@ -45,8 +45,28 @@ PostgreSQL на своём компьютере. Скопируйте `.env.exam
 - «The Secret of Lake Bakaly» (Ites Shynbatyr): `src/content/bakaly.ts`, словарь в `src/content/lexicon-bakaly.ts`.
 - «The Institute of Advanced Research and Experimental Artificial Consciousness»: `src/content/institute.ts`, словарь в `src/content/lexicon-institute.ts`, обложка в `public/covers/institute-of-artificial-consciousness.svg`. Версия C1 опубликована как B2, потому что уровня C1 на сайте пока нет.
 
+## Деплой на Vercel
+
+Сайт работает на Vercel (регион Франкфурт, `vercel.json`), база PostgreSQL в облаке в том же регионе (например, Neon, регион `eu-central-1`).
+
+1. **База.** Создайте облачную базу PostgreSQL. Понадобятся две строки подключения: обычная (для миграций) и через пулер (для сайта, у Neon в адресе есть `-pooler`). В конце обеих `?sslmode=require`.
+2. **Таблицы.** С своего компьютера примените миграции к облачной базе, подставив обычную строку подключения:
+   ```bash
+   $env:DATABASE_URL="postgres://…?sslmode=require"; npm run db:migrate
+   ```
+   Это нужно повторять после каждой новой миграции в `drizzle/`, до выкладки кода, который её использует.
+3. **Проект в Vercel.** Импортируйте репозиторий из GitHub. Настройки сборки Vercel определит сам (Next.js).
+4. **Переменные.** В Vercel → Settings → Environment Variables (Production) впишите ключи из `.env.example`. `DATABASE_URL` — строка через пулер. `BETTER_AUTH_URL` — адрес сайта на Vercel или свой домен. `BETTER_AUTH_SECRET` — новый, не тот, что локально.
+5. **Google.** В Google Cloud → Clients добавьте адрес сайта в «Authorized JavaScript origins» и `<адрес>/api/auth/callback/google` в «Authorized redirect URIs». Пока приложение в режиме Testing, войти могут только Test users.
+6. **Почта.** Без `BREVO_API_KEY` и `MAIL_FROM` письма подтверждения не уходят, и регистрация по email не завершится. Через Google вход работает.
+7. **Выкладка.** Каждый push в `main` выкладывается автоматически. Проверьте вход, чтение главы, главу-подарок и `/admin/paywall`.
+
+**Ограничения:** счётчики частых запросов (`createRateLimiter`, лимиты Better Auth) живут в памяти одной копии сервера. На Vercel копий несколько, поэтому лимиты мягче, чем локально. Перед большим трафиком их нужно перенести в базу.
+
+**Персональные данные:** на Vercel и в облачной базе email читателей хранятся за пределами Казахстана. Политика конфиденциальности это описывает, но ответ юриста (TODOS, P1) нужен до публичного запуска.
+
 ## Что пока не сделано
 
-Аккаунты и база данных, панель `/admin`, ИИ-конвейер, лендинг, аналитика, развёртывание и E2E-тесты. План описан в дизайн-документе.
+ИИ-конвейер, аналитика и настоящая оплата (Kaspi). Планы описаны в дизайн-документе и `TODOS.md`.
 
 Сейчас тексты демонстрационные, а казахские переводы и транскрипции черновые: перед показом читателям их должен проверить носитель языка.

@@ -10,9 +10,16 @@ export class MissingDatabaseUrlError extends Error {
   }
 }
 
+/**
+ * Connections per server process. Vercel runs many copies of the app at once, and a free cloud
+ * database allows few connections, so there each copy keeps a small pool (behind the database's
+ * own pooler, see .env.example). A single local server can use more.
+ */
+const POOL_MAX = process.env.VERCEL ? 3 : 10;
+
 /** A database on its own connection pool. Tests use this with DATABASE_URL_TEST. */
 export function createDb(url: string): Database {
-  return drizzle(new Pool({ connectionString: url, max: 10 }), { schema });
+  return drizzle(new Pool({ connectionString: url, max: POOL_MAX, idleTimeoutMillis: 10_000 }), { schema });
 }
 
 // One pool per server process. Next.js dev reloads modules on every edit, so the pool
