@@ -3,6 +3,7 @@
 import { getAnonId } from "./anon-id";
 import { clearReaderData, mergeFromServer, readReaderData, setSyncSink } from "./store";
 import { MAX_SYNC_WORDS, opsFromState, type ReaderData, type SyncOp } from "./sync";
+import { clearSignupSource, readSignupSource } from "./signup-source";
 
 // The browser side of the reader data sync (T7). Rules live in src/lib/sync.ts.
 //
@@ -145,7 +146,13 @@ async function syncOnce(pull: boolean) {
   const response = await fetch("/api/me/sync", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ops, anonId: importing ? getAnonId() : null, pull: pull || importing }),
+    // The first sync of an account on this browser also says where the guest pressed sign-up.
+    body: JSON.stringify({
+      ops,
+      anonId: importing ? getAnonId() : null,
+      signupSource: importing ? readSignupSource() : null,
+      pull: pull || importing,
+    }),
   });
   if (activeUser !== userId) return; // Signed out while the request was in flight.
 
@@ -158,6 +165,7 @@ async function syncOnce(pull: boolean) {
 
   writeOutbox(readOutbox().slice(outbox.length));
   writeOwner(userId);
+  if (importing) clearSignupSource();
   if (response.status === 200) {
     const data = (await response.json()) as ReaderData;
     mergeFromServer(data, readOutbox());

@@ -12,6 +12,14 @@ import { loadPaywallStats, type PaywallStats } from "@/lib/paywall-stats";
 import { transferDetails } from "@/lib/transfer";
 import { GrantForm } from "./grant-form";
 import { GrantsTable, Pager, PLAN_NAMES, ReadersTable, RequestsTable, Toolbar, hrefWith, type Params } from "./parts";
+import type { SignupSource } from "@/lib/signup-source";
+
+const SOURCE_NAMES: Record<SignupSource | "unknown", string> = {
+  chapter_end: "Тарау соңында",
+  gift_paywall: "Сыйлық тарау",
+  other: "Басқа (хабарлама, карточка)",
+  unknown: "Белгісіз",
+};
 
 // Admin panel (docs/paywall-plan.md, D11 and T8). Only emails in ADMIN_EMAILS.
 //
@@ -273,6 +281,16 @@ function Stats({ week, month }: { week: PaywallStats; month: PaywallStats }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <h2 className="mt-8 text-lg font-semibold">Тіркелу қайдан келді · 30 күн</h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-4">
+        {month.signupsBySource.map(({ source, count }) => (
+          <div key={source} className="rounded-2xl border border-line p-4">
+            <p className="text-sm text-muted">{SOURCE_NAMES[source]}</p>
+            <p className="mt-1 text-2xl font-bold">{count}</p>
+          </div>
+        ))}
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">Кітап пен деңгей бойынша · 30 күн</h2>

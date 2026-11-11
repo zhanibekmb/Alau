@@ -4,7 +4,8 @@ import { paywallEvents, user } from "../db/schema";
 import { createTestDb, resetDb } from "../db/test-db";
 import { loadReaderData, syncReaderData } from "./reader-data";
 import type { SavedWord } from "./state";
-import type { SyncOp } from "./sync";
+import type { SyncOp } from "./sync";import type { SignupSource } from "./signup-source";
+
 
 let db: Database;
 
@@ -22,8 +23,8 @@ const word = (id: string, extra: Partial<SavedWord> = {}): SavedWord => ({
   ...extra,
 });
 const progress = (page: number, updatedAt = Date.UTC(2026, 10, 9), finished = false) => ({ page, totalPages: 10, finished, updatedAt });
-const sync = (userId: string, ops: SyncOp[], extra: { anonId?: string; pull?: boolean } = {}) =>
-  syncReaderData(db, userId, { ops, anonId: extra.anonId ?? null, pull: extra.pull ?? true });
+const sync = (userId: string, ops: SyncOp[], extra: { anonId?: string; pull?: boolean; signupSource?: SignupSource } = {}) =>
+  syncReaderData(db, userId, { ops, anonId: extra.anonId ?? null, signupSource: extra.signupSource ?? null, pull: extra.pull ?? true });
 
 beforeAll(() => {
   db = createTestDb();
@@ -117,6 +118,21 @@ describe("anon id (E1B)", () => {
     const rows = await db.select().from(paywallEvents);
     const owners = rows.map((r) => `${r.anonId}:${r.userId}`).sort();
     expect(owners).toEqual(["anon-1:u1", "anon-1:u1", "anon-1:u2", "anon-2:null"]);
+  });
+});
+
+describe("sign-up source", () => {
+  it("tags the reader's own signup row once and never rewrites it", async () => {
+    await db.insert(paywallEvents).values([
+      { userId: "u1", type: "signup" },
+      { userId: "u2", type: "signup" },
+    ]);
+    await sync("u1", [], { signupSource: "chapter_end" });
+    // A later first sign-in on another browser sends another source: the first one stays.
+    await sync("u1", [], { signupSource: "gift_paywall" });
+    const rows = await db.select().from(paywallEvents);
+    const sources = rows.map((r) => `${r.userId}:${r.source}`).sort();
+    expect(sources).toEqual(["u1:chapter_end", "u2:null"]);
   });
 });
 

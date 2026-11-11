@@ -8,13 +8,20 @@ import { ACCENTS, DAILY_GOALS, type Accent } from "@/lib/state";
 import { clearAllData, updateSettings, useAppState } from "@/lib/store";
 import { formatDuration, minutesToday, streakOf, thisWeek, totalSeconds } from "@/lib/streak";
 import { LEVELS, levelLabel, type Level } from "@/lib/types";
+import { signUpHref } from "@/lib/guest-nudge";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useNow } from "@/lib/use-now";
 import { SubscriptionCard, useSignOut } from "./account";
 import { Mascot } from "./brand";
-import { CaretIcon } from "./icons";
+import { GuestSignUpCard } from "./guest-nudge";
+import { CaretIcon, LockIcon } from "./icons";
 
 // Profile from the Figma Desktop screen: account, four numbers, this week's reading against the
 // daily goal, the subscription, and reading settings.
+//
+// A guest sees a teaser (design "Регистрация как награда, а не стена", step 5): their own numbers
+// stay visible, marked "only in this browser", because nobody fears losing what they cannot see.
+// The weekly chart is blurred behind a sign-up button.
 
 const ACCENT_NAMES: Record<Accent, string> = { us: "American (US)", gb: "British (UK)" };
 
@@ -25,6 +32,7 @@ export function Profile() {
     <div className="mx-auto w-full max-w-[913px] px-5 pb-10 pt-6 md:px-8 md:pt-14">
       <h1 className="text-3xl font-bold md:text-4xl">Профиль</h1>
       <ProfileHeader />
+      <GuestSignUpCard className="mt-5" />
       <StatCards />
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_330px]">
         <WeeklyActivity onChangeGoal={() => goalRef.current?.focus()} />
@@ -88,6 +96,8 @@ function StatCards() {
   const reading = Object.values(progress);
   const pages = reading.reduce((sum, p) => sum + p.page, 0);
   const learned = learnedCount(words, reviews);
+  const { signedIn, sessionPending } = useEntitlements();
+  const guest = !signedIn && !sessionPending;
 
   const cards = [
     { icon: "🔥", tint: "bg-[#fdf0b8]", value: `${streak} күн`, label: "Үздіксіз оқу" },
@@ -96,13 +106,24 @@ function StatCards() {
       icon: "🧠",
       tint: "bg-[#cdeefd]",
       value: `${Object.keys(words).length} сөз`,
-      label: learned > 0 ? `Сөздікте · ${learned} үйренілді` : "Сөздікте",
+      // Review is an account feature, so a guest's "learned" is always 0: not shown.
+      label: !guest && learned > 0 ? `Сөздікте · ${learned} үйренілді` : "Сөздікте",
     },
     { icon: "⏱️", tint: "bg-[#dbdbff]", value: formatDuration(totalSeconds(readingDays)), label: "жалпы оқу уақыты" },
   ];
 
   return (
-    <dl className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+    <>
+    {guest && (
+      <p className="mt-5 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+        <span aria-hidden="true">⚠️</span>
+        Бұл нәтижелер тек осы браузерде сақталған.
+        <Link href={signUpHref("/profile")} className="font-medium text-amber-700 underline underline-offset-2">
+          Сақтау
+        </Link>
+      </p>
+    )}
+    <dl className={`${guest ? "mt-3" : "mt-5"} grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5`}>
       {cards.map(({ icon, tint, value, label }) => (
         <div key={label} className="rounded-3xl border border-line bg-white p-4 shadow-sm shadow-black/[0.03] md:p-5">
           <span className={`flex size-11 items-center justify-center rounded-xl text-xl ${tint}`} aria-hidden="true">
@@ -113,6 +134,7 @@ function StatCards() {
         </div>
       ))}
     </dl>
+    </>
   );
 }
 
@@ -130,7 +152,9 @@ function WeeklyActivity({ onChangeGoal }: { onChangeGoal: () => void }) {
   const { readingDays, settings } = useAppState();
   const now = useNow();
   const goal = settings.dailyGoal;
-  if (!now) return <section className="h-[326px] rounded-3xl border border-line" aria-hidden="true" />;
+  const { signedIn, sessionPending } = useEntitlements();
+  // While the session loads, a skeleton: a signed-in reader must not flash the lock.
+  if (!now || sessionPending) return <section className="h-[326px] rounded-3xl border border-line" aria-hidden="true" />;
 
   const week = thisWeek(readingDays, now);
   const weekMinutes = week.reduce((sum, d) => sum + d.minutes, 0);
@@ -138,10 +162,25 @@ function WeeklyActivity({ onChangeGoal }: { onChangeGoal: () => void }) {
   const left = Math.max(0, goal - minutesToday(readingDays, now));
 
   return (
-    <section className="flex flex-col rounded-3xl border border-line p-5" aria-labelledby="week-title">
+    <section className="relative flex flex-col overflow-hidden rounded-3xl border border-line p-5" aria-labelledby="week-title">
+      {!signedIn && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/40 p-6 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-white shadow-md">
+            <LockIcon className="size-6 text-amber-600" />
+          </span>
+          <p id="week-title" className="text-lg font-semibold">
+            Апталық белсенділік — аккаунтпен
+          </p>
+          <p className="max-w-xs text-sm text-muted">Әр күнгі оқу уақыты мен норма қалай орындалғанын көресіз.</p>
+          <Link href={signUpHref("/profile")} className="rounded-2xl bg-accent px-5 py-3 font-semibold text-on-accent shadow-md shadow-accent/30">
+            Тіркеліп, толық статистиканы көріңіз
+          </Link>
+        </div>
+      )}
+      <div className={signedIn ? "contents" : "pointer-events-none select-none blur-[6px]"} inert={!signedIn}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 id="week-title" className="text-xl font-semibold">
+          <h2 id={signedIn ? "week-title" : undefined} className="text-xl font-semibold">
             Апталық оқу белсенділігі
           </h2>
           <p className="text-muted">Күнделікті норма: {goal} минут</p>
@@ -193,6 +232,7 @@ function WeeklyActivity({ onChangeGoal }: { onChangeGoal: () => void }) {
         <button type="button" onClick={onChangeGoal} className="font-medium text-amber-600 hover:underline">
           Норманы өзгерту
         </button>
+      </div>
       </div>
     </section>
   );

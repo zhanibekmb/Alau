@@ -72,6 +72,7 @@ describe("paywall settings that would lock readers out or sell nothing", () => {
   it.each([
     ["no free chapter", { freeChapters: 0, priceTenge: 490 }],
     ["no paid chapter", { freeChapters: 3, priceTenge: 490 }],
+    ["no paid chapter after the sign-up gift", { freeChapters: 2, priceTenge: 490 }],
     ["half a chapter", { freeChapters: 1.5, priceTenge: 490 }],
     ["free price", { freeChapters: 1, priceTenge: 0 }],
     ["fractional price", { freeChapters: 1, priceTenge: 490.5 }],
@@ -83,9 +84,9 @@ describe("paywall settings that would lock readers out or sell nothing", () => {
     expect(() => buildEdition(threeChapters({ work: " " }), dictionary)).toThrow(InvalidPaywallError);
   });
 
-  it("accepts a valid paywall", () => {
-    const info = buildEdition(threeChapters({ paywall: { freeChapters: 2, priceTenge: 490 } }), dictionary).info;
-    expect(info.paywall).toEqual({ freeChapters: 2, priceTenge: 490 });
+  it("accepts a valid paywall: one free, one gift and one paid chapter", () => {
+    const info = buildEdition(threeChapters({ paywall: { freeChapters: 1, priceTenge: 490 } }), dictionary).info;
+    expect(info.paywall).toEqual({ freeChapters: 1, priceTenge: 490 });
     expect(info.work).toBe("test");
   });
 });

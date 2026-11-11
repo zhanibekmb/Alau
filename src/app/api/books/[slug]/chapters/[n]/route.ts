@@ -7,7 +7,7 @@ import { createRateLimiter, serveChapter, type LoadReader } from "@/lib/serve";
 
 const allow = createRateLimiter(120, 60_000);
 
-/** Only reached for paid chapters, so free chapters never touch the database. */
+/** Only reached for chapters past the free part, so free chapters never touch the database. */
 const loadReader: LoadReader = async () => {
   const user = await getCurrentUser();
   if (!user) return null;

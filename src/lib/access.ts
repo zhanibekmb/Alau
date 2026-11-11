@@ -1,10 +1,12 @@
 import type { PaywallConfig } from "./types";
 
 // Who may read which chapter. Pure: no database, no clock, so every branch is easy to test.
-// Plan: docs/paywall-plan.md, "Решение о доступе к главе".
+// Plan: docs/paywall-plan.md, "Решение о доступе к главе"; the gift chapter comes from the
+// office-hours design "Регистрация как награда, а не стена" (2026-11-11).
 //
-//   chapter <= freeChapters, or no paywall ──────────────▶ ok
+//   chapter <= freeChapters, or no paywall ──────────────▶ ok, even for a guest
 //   no reader ───────────────────────────────────────────▶ login_required (401)
+//   the GIFT_CHAPTERS right after the free part ─────────▶ ok: a free account's gift
 //   active premium, or this work bought on any level ────▶ ok
 //   otherwise ───────────────────────────────────────────▶ payment_required (402)
 //
@@ -20,9 +22,25 @@ export type ReaderAccess = { userId: string; entitlements: Entitlement[] };
 
 export type AccessDecision = "ok" | "login_required" | "payment_required";
 
-/** True when the chapter is free for everyone, so nobody needs to be looked up. */
+/**
+ * Chapters past the climax that a free account opens. Signing up then gives the guest something
+ * they want right now (the next chapter), instead of being a wall in front of the free part.
+ */
+export const GIFT_CHAPTERS = 1;
+
+/** True when anyone may read the chapter, so nobody needs to be looked up. */
 export function isFreeChapter(paywall: PaywallConfig | null, chapter: number): boolean {
   return paywall === null || chapter <= paywall.freeChapters;
+}
+
+/** The last chapter a signed-in reader gets without paying; Infinity without a paywall. */
+export function lastAccountChapter(paywall: PaywallConfig | null): number {
+  return paywall === null ? Infinity : paywall.freeChapters + GIFT_CHAPTERS;
+}
+
+/** True for the chapter(s) a free account opens. */
+export function isGiftChapter(paywall: PaywallConfig | null, chapter: number): boolean {
+  return paywall !== null && chapter > paywall.freeChapters && chapter <= lastAccountChapter(paywall);
 }
 
 /** A book purchase never expires; premium is valid until expiresAt (exclusive). */
@@ -41,5 +59,6 @@ export function canReadChapter(input: {
   const { paywall, work, chapter, reader, now } = input;
   if (isFreeChapter(paywall, chapter)) return "ok";
   if (!reader) return "login_required";
+  if (isGiftChapter(paywall, chapter)) return "ok";
   return reader.entitlements.some((e) => unlocksWork(e, work, now)) ? "ok" : "payment_required";
 }

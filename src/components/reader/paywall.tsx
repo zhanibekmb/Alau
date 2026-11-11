@@ -3,18 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { EntitlementKind } from "@/lib/access";
+import { lastAccountChapter, type EntitlementKind } from "@/lib/access";
+import { signUpHref } from "@/lib/guest-nudge";
+import { withSource } from "@/lib/signup-source";
 import { getAnonId } from "@/lib/anon-id";
 import { PREMIUM_PLANS, SINGLE_BOOK_TITLE } from "@/lib/plans";
 import type { BookInfo } from "@/lib/types";
 import { LEGAL } from "@/content/legal";
 import { Mascot } from "../brand";
+import { GoogleSignUp } from "../google-sign-up";
 import { CheckIcon } from "../icons";
 import type { TransferDetails } from "@/lib/transfer";
 
-// The paywall at the first paid chapter (docs/paywall-plan.md, T6).
+// The paywall after the free part (docs/paywall-plan.md, T6).
 //
-//   guest      → choose → /login?mode=sign-up&next=<this chapter>   (choice is made again after sign-in)
+//   guest      → first a free step: sign up and read the gift chapter (GIFT_CHAPTERS), see
+//                design "Регистрация как награда, а не стена"; tariffs come second
+//              → choose → /login?mode=sign-up&next=<this chapter>   (choice is made again after sign-in)
 //   signed in  → choose → POST /api/paywall/choice
 //                           ├─ unlocked (demo)      → onUnlocked(): the reader loads the chapter
 //                           ├─ not unlocked (interest) → "payment opens soon"
@@ -47,11 +52,13 @@ export function Paywall({
   book,
   chapter,
   needsLogin,
+  googleEnabled = false,
   onUnlocked,
 }: {
   book: BookInfo;
   chapter: number;
   needsLogin: boolean;
+  googleEnabled?: boolean;
   onUnlocked: () => void;
 }) {
   const router = useRouter();
@@ -62,7 +69,11 @@ export function Paywall({
   const [saved, setSaved] = useState<{ transfer: TransferDetails | null; email?: string } | null>(null);
   const firstPage = book.chapters.find((c) => c.n === chapter)?.firstPage ?? 1;
   const returnTo = `/read/${book.slug}?page=${firstPage}`;
-  const loginHref = `/login?mode=sign-up&next=${encodeURIComponent(returnTo)}`;
+  const loginHref = signUpHref(returnTo, "gift_paywall");
+  /** The chapter a free account opens; a guest who asked for a later one starts there after sign-up. */
+  const freeForAccount = lastAccountChapter(book.paywall);
+  const giftChapter = book.chapters.find((c) => c.n === freeForAccount);
+  const giftReturn = `/read/${book.slug}?page=${giftChapter?.firstPage ?? firstPage}`;
 
   // Count the view once per chapter (React may run effects twice in development).
   const counted = useRef<string | null>(null);
@@ -146,15 +157,58 @@ export function Paywall({
 
   return (
     <section className="py-6 md:py-10" aria-labelledby="paywall-title">
-      <div className="flex flex-col items-center text-center">
-        <Mascot pose="subscription" className="size-20" />
-        <h2 id="paywall-title" className="mt-3 text-2xl font-bold md:text-3xl">
-          Тегін бөлім осы жерде аяқталды
-        </h2>
-        <p className="mt-2 max-w-md text-[var(--r-muted)]">
-          Алғашқы {book.paywall?.freeChapters ?? ""} тарау тегін болды. Жалғасын оқу үшін тариф таңдаңыз.
-        </p>
-      </div>
+      {needsLogin && giftChapter ? (
+        // A guest hears "here is your next step", not "stop": the gift chapter costs only an account.
+        <>
+          <div className="flex flex-col items-center text-center">
+            <Mascot pose="onboarding-login" className="size-24" />
+            <h2 id="paywall-title" className="mt-3 text-2xl font-bold md:text-3xl">
+              {giftChapter.n}-тарау — сізге сыйлық
+            </h2>
+            <p className="mt-2 max-w-md text-[var(--r-muted)]">
+              Тегін аккаунт ашыңыз да, жалғасын бірден оқыңыз. Прогресс пен сөздік те сақталады.
+            </p>
+          </div>
+          <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3">
+            <GoogleSignUp
+              next={giftReturn}
+              source="gift_paywall"
+              label={googleEnabled ? "Google арқылы тіркеліп, оқу" : "Тегін тіркеліп, оқу"}
+              googleEnabled={googleEnabled}
+              className="bg-accent text-lg text-on-accent shadow-md shadow-accent/30"
+            />
+            {googleEnabled && (
+              <Link
+                href={signUpHref(giftReturn, "gift_paywall")}
+                className="text-center text-sm font-medium text-amber-700 underline underline-offset-2"
+              >
+                Email арқылы тіркелу
+              </Link>
+            )}
+            <p className="text-center text-sm text-[var(--r-muted)]">
+              Аккаунтыңыз бар ма?{" "}
+              <Link href={`/login?next=${encodeURIComponent(withSource(giftReturn, "gift_paywall"))}`} className="font-medium text-amber-700 underline underline-offset-2">
+                Кіру
+              </Link>
+            </p>
+          </div>
+          <div className="mt-8 flex items-center gap-3 text-sm text-[var(--r-muted)]">
+            <span className="h-px flex-1 bg-[var(--r-line)]" />
+            немесе толық кітапты бірден ашыңыз
+            <span className="h-px flex-1 bg-[var(--r-line)]" />
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center text-center">
+          <Mascot pose="subscription" className="size-20" />
+          <h2 id="paywall-title" className="mt-3 text-2xl font-bold md:text-3xl">
+            Тегін бөлім осы жерде аяқталды
+          </h2>
+          <p className="mt-2 max-w-md text-[var(--r-muted)]">
+            Алғашқы {needsLogin ? (book.paywall?.freeChapters ?? "") : freeForAccount} тарау тегін болды. Жалғасын оқу үшін тариф таңдаңыз.
+          </p>
+        </div>
+      )}
 
       <div role="radiogroup" aria-label="Тариф" className="mt-6 flex flex-col gap-3">
         {choices.map((option) => {
@@ -205,11 +259,13 @@ export function Paywall({
         type="button"
         onClick={choose}
         disabled={busy}
-        className="mt-5 h-14 w-full rounded-2xl bg-accent text-lg font-semibold text-on-accent disabled:opacity-60"
+        className={`mt-5 h-14 w-full rounded-2xl text-lg font-semibold disabled:opacity-60 ${
+          needsLogin && giftChapter ? "border-2 border-accent text-[var(--r-fg)]" : "bg-accent text-on-accent"
+        }`}
       >
-        {busy ? "Күте тұрыңыз…" : needsLogin ? "Тіркеліп, жалғастыру" : `Таңдау · ${formatTenge(current.price)}`}
+        {busy ? "Күте тұрыңыз…" : needsLogin ? "Тіркеліп, тариф таңдау" : `Таңдау · ${formatTenge(current.price)}`}
       </button>
-      {needsLogin && (
+      {needsLogin && !giftChapter && (
         <p className="mt-3 text-center text-sm text-[var(--r-muted)]">
           Аккаунтыңыз бар ма?{" "}
           <Link href={`/login?next=${encodeURIComponent(returnTo)}`} className="font-medium text-amber-700 underline underline-offset-2">

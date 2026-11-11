@@ -77,10 +77,17 @@ function Heading({ children, center = false }: { children: ReactNode; center?: b
 
 /** A word that changes inside a dark pill, like the busuu hero. */
 function ChangingWord({ words }: { words: string[] }) {
-  const longest = words.reduce((a, b) => (b.length > a.length ? b : a));
   return (
-    <span className="relative mx-1 inline-block overflow-hidden rounded-2xl bg-[#201f4b] px-4 align-bottom leading-[1.2] text-[#ffc24b] md:rounded-3xl md:px-6">
-      <span className="invisible">{longest}</span>
+    <span className="relative mx-1 inline-block overflow-hidden rounded-2xl bg-[#201f4b] px-4 align-bottom leading-[1.2] whitespace-nowrap text-[#ffc24b] md:rounded-3xl md:px-6">
+      {/* Every word in one grid cell, hidden: the pill takes the width of the widest as drawn.
+          Counting letters is not enough: "сөйле" is wider than "түсін" in this font. */}
+      <span className="invisible inline-grid">
+        {words.map((word) => (
+          <span key={word} className="col-start-1 row-start-1">
+            {word}
+          </span>
+        ))}
+      </span>
       <span
         className="motion-loop absolute inset-x-4 top-0 flex animate-[word-cycle_10s_cubic-bezier(.7,0,.3,1)_infinite] flex-col md:inset-x-6"
         aria-hidden="true"
@@ -426,7 +433,10 @@ function Prices() {
 
 function Questions() {
   const faq = [
-    ["Тегін бе?", "Иә. Әр кітаптың кульминацияға дейінгі бөлімі, сөздік пен қайталау тегін. Тіркелусіз оқи бастауға болады."],
+    [
+      "Тегін бе?",
+      "Иә. Әр кітаптың кульминацияға дейінгі бөлімі мен сөздік тегін, тіркелусіз оқи бастауға болады. Тегін аккаунт ашсаңыз, кульминациядан кейінгі тарау сыйлық, сөздерді қайталау ашылады, ал прогресс барлық құрылғыда сақталады.",
+    ],
     ["Қай деңгейден бастаған дұрыс?", "Ағылшынды жаңа бастасаңыз — A1. Кітаптың бірінші бетін ашып көріңіз: сөздердің көбі таныс болса, деңгей сізге сай."],
     ["Телефоннан оқуға бола ма?", "Иә. Сайт телефонға бейімделген, қосымша орнатудың қажеті жоқ — браузерде ашылады."],
     ["Прогресім жоғалмай ма?", "Тіркелсеңіз, прогресс, сөздік және серия аккаунтыңызда сақталып, кез келген құрылғыда ашылады."],

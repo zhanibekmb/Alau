@@ -75,6 +75,8 @@ export const paywallEvents = pgTable(
     work: text("work"),
     slug: text("slug"),
     chapter: integer("chapter"),
+    /** Signup rows only: where the guest pressed sign-up (src/lib/signup-source.ts); null = unknown. */
+    source: text("source"),
     createdAt: createdAt(),
   },
   (table) => [

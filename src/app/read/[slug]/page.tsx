@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Reader, Unavailable } from "@/components/reader/reader";
+import { googleCredentials } from "@/lib/auth";
 import { findAvailableBook, findEdition } from "@/lib/catalog";
 
 type Props = {
@@ -26,7 +27,14 @@ async function ReaderView({ params, searchParams }: Props) {
 
   const parsed = Number(page);
   const startPage = Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-  return <Reader key={`${slug}:${startPage ?? "resume"}`} book={book} startPage={startPage} />;
+  return (
+    <Reader
+      key={`${slug}:${startPage ?? "resume"}`}
+      book={book}
+      startPage={startPage}
+      googleEnabled={googleCredentials() !== null}
+    />
+  );
 }
 
 export default function ReadPage(props: Props) {

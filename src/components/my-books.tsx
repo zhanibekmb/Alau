@@ -7,6 +7,7 @@ import { progressPercent, type AppState } from "@/lib/state";
 import { levelLabel, type BookInfo } from "@/lib/types";
 import { BookCard, BookCover } from "./book-card";
 import { Mascot } from "./brand";
+import { GuestSignUpCard } from "./guest-nudge";
 import { CatalogSkeleton, Chip, ChipRow, PhoneHeader, SearchField } from "./catalog";
 import { StreakChip } from "./streak";
 
@@ -70,6 +71,7 @@ export function MyBooks({ books }: { books: BookInfo[] }) {
           </li>
         </ul>
       </div>
+      <GuestSignUpCard className="mt-5" />
 
       {current && (
         <>

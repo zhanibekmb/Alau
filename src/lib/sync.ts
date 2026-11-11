@@ -1,6 +1,7 @@
 import { addWord, mergeProgress, type AppState, type Progress, type Review, type SavedWord } from "./state";
 import { MAX_BOX } from "./review";
 import { DAY_KEY, MAX_DAY_SECONDS } from "./streak";
+import { parseSignupSource, type SignupSource } from "./signup-source";
 
 // Reader data sync between the browser and the server (docs/paywall-plan.md, E2A and E2B).
 // Pure rules shared by both sides. The browser queues every change as an op and sends the
@@ -21,7 +22,13 @@ export type SyncOp =
   | { type: "review"; id: string; review: Review };
 
 /** anonId is sent once, at the first sign-in on this browser, to link the guest's paywall events (E1B). */
-export type SyncRequest = { ops: SyncOp[]; anonId: string | null; pull: boolean };
+export type SyncRequest = {
+  ops: SyncOp[];
+  anonId: string | null;
+  /** Where the guest pressed sign-up; sent with the first sync of an account on a browser. */
+  signupSource: SignupSource | null;
+  pull: boolean;
+};
 export type ReaderData = Pick<AppState, "progress" | "words" | "readingDays" | "reviews">;
 
 /** Plan, "Безопасность": a guest import is capped at 5 000 words. */
@@ -100,7 +107,7 @@ export type Parsed = { ok: true; value: SyncRequest; dropped: number } | { ok: f
  */
 export function parseSyncRequest(body: unknown): Parsed {
   if (!body || typeof body !== "object") return { ok: false, error: "body must be an object" };
-  const { ops, anonId, pull } = body as Record<string, unknown>;
+  const { ops, anonId, pull, signupSource } = body as Record<string, unknown>;
   if (!Array.isArray(ops)) return { ok: false, error: "ops must be a list" };
   if (ops.length > MAX_SYNC_OPS) return { ok: false, error: "too many changes" };
   if (anonId !== undefined && anonId !== null && (!isText(anonId, MAX_ANON_ID) || anonId.length === 0)) {
@@ -110,7 +117,13 @@ export function parseSyncRequest(body: unknown): Parsed {
   if (parsed.filter((op) => op.type === "word").length > MAX_SYNC_WORDS) return { ok: false, error: "too many words" };
   return {
     ok: true,
-    value: { ops: parsed, anonId: typeof anonId === "string" ? anonId : null, pull: pull === true },
+    value: {
+      ops: parsed,
+      anonId: typeof anonId === "string" ? anonId : null,
+      // An unknown value is ignored rather than refused: the reader's data still syncs.
+      signupSource: parseSignupSource(signupSource),
+      pull: pull === true,
+    },
     dropped: ops.length - parsed.length,
   };
 }

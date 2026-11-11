@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -5,8 +6,8 @@ import { getDb, type Database } from "../db";
 import * as schema from "../db/schema";
 import { passwordResetMail, sendMail, verificationMail } from "./mail";
 
-// Sign-up and sign-in with email and password (plan decision D3). Accounts live in our own
-// PostgreSQL; the only outside service that sees an email is Brevo, when it sends a reset link.
+// Sign-up and sign-in with email and password (plan decision D3), or with Google when its keys
+// are set. Accounts live in our own PostgreSQL; Brevo sees an email only when it sends a link.
 
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
@@ -28,11 +29,36 @@ const sendResetEmail: ResetEmailSender = ({ email, url }) => sendMail(passwordRe
 /** Sends the "confirm your email" link (src/lib/mail.ts). */
 const sendVerifyEmail: ResetEmailSender = ({ email, url }) => sendMail(verificationMail(email, url));
 
+export type GoogleCredentials = { clientId: string; clientSecret: string };
+
+/** Google sign-in is on only when both keys are in .env (Google Cloud Console → Credentials). */
+export function googleCredentials(env: NodeJS.ProcessEnv = process.env): GoogleCredentials | null {
+  const clientId = env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+  return clientId && clientSecret ? { clientId, clientSecret } : null;
+}
+
+/**
+ * Google has just proved that the reader owns this email. If an account with it was never
+ * confirmed, its password may have been typed by someone else, so the password and any
+ * sessions go, and the email counts as confirmed. A confirmed account is left as it is.
+ */
+export async function claimUnverifiedAccount(db: Database, userId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select({ verified: schema.user.emailVerified }).from(schema.user).where(eq(schema.user.id, userId));
+    if (!row || row.verified) return;
+    await tx.delete(schema.account).where(and(eq(schema.account.userId, userId), eq(schema.account.providerId, "credential")));
+    await tx.delete(schema.session).where(eq(schema.session.userId, userId));
+    await tx.update(schema.user).set({ emailVerified: true }).where(eq(schema.user.id, userId));
+  });
+}
+
 export function createAuth(
   db: Database,
   options: {
     secret: string;
     baseURL?: string;
+    google?: GoogleCredentials | null;
     sendResetEmail?: ResetEmailSender;
     sendVerificationEmail?: ResetEmailSender;
     /** On by default: a new account cannot sign in until its email is confirmed. Tests may turn it off. */
@@ -72,6 +98,14 @@ export function createAuth(
         await sendVerify({ email: user.email, url });
       },
     },
+    // "Google арқылы кіру". Google has already confirmed the email, so no link is sent. A reader who
+    // signed up with a password and later uses Google with the same email lands in the same account.
+    // Linking to an unconfirmed account is allowed too (Better Auth refuses it by default), because
+    // the account hook below removes the unconfirmed password first: see claimUnverifiedAccount.
+    socialProviders: options.google
+      ? { google: { clientId: options.google.clientId, clientSecret: options.google.clientSecret, prompt: "select_account" } }
+      : {},
+    account: { accountLinking: { enabled: true, trustedProviders: ["google"], requireLocalEmailVerified: false } },
     rateLimit: {
       // On in every environment, so tests and local runs behave like production.
       enabled: true,
@@ -83,6 +117,13 @@ export function createAuth(
       },
     },
     databaseHooks: {
+      account: {
+        create: {
+          after: async (created) => {
+            if (created.providerId === "google") await claimUnverifiedAccount(db, created.userId);
+          },
+        },
+      },
       user: {
         create: {
           // Counted on /admin/paywall. The guest's earlier paywall events are linked to this
@@ -104,14 +145,19 @@ export function createAuth(
 
 export type Auth = ReturnType<typeof createAuth>;
 
-const globalForAuth = globalThis as unknown as { alauAuth?: Auth };
+const globalForAuth = globalThis as unknown as { alauAuth?: Auth; alauAuthKey?: string };
 
 /** The app's auth instance, created on first use (like getDb). */
 export function getAuth(): Auth {
-  if (!globalForAuth.alauAuth) {
+  const google = googleCredentials();
+  // The dev server reloads .env without a restart, but the cached instance would keep the old
+  // keys ("Provider not found" after adding Google). Rebuild it when the keys change.
+  const key = `${process.env.BETTER_AUTH_URL ?? ""}|${google?.clientId ?? ""}|${google?.clientSecret ?? ""}`;
+  if (!globalForAuth.alauAuth || globalForAuth.alauAuthKey !== key) {
     const secret = process.env.BETTER_AUTH_SECRET;
     if (!secret) throw new MissingAuthSecretError();
-    globalForAuth.alauAuth = createAuth(getDb(), { secret, baseURL: process.env.BETTER_AUTH_URL });
+    globalForAuth.alauAuth = createAuth(getDb(), { secret, baseURL: process.env.BETTER_AUTH_URL, google });
+    globalForAuth.alauAuthKey = key;
   }
   return globalForAuth.alauAuth;
 }

@@ -23,9 +23,27 @@ afterAll(async () => {
 });
 
 describe("loadPaywallStats", () => {
+  it("splits sign-ups by where the guest pressed the button", async () => {
+    const at = daysAgo(1);
+    await db.insert(paywallEvents).values([
+      { userId: "u1", type: "signup", source: "chapter_end", createdAt: at },
+      { userId: "u2", type: "signup", source: "gift_paywall", createdAt: at },
+      { userId: "u2", type: "signup", source: null, createdAt: at },
+      { userId: "u1", type: "signup", source: "chapter_end", createdAt: daysAgo(10) },
+    ]);
+    const stats = await loadPaywallStats(db, daysAgo(7));
+    expect(stats.signupsBySource).toEqual([
+      { source: "chapter_end", count: 1 },
+      { source: "gift_paywall", count: 1 },
+      { source: "other", count: 0 },
+      { source: "unknown", count: 1 },
+    ]);
+  });
+
   it("is all zeros with no events", async () => {
     const stats = await loadPaywallStats(db, daysAgo(7));
     expect(stats).toMatchObject({ shown: { people: 0, events: 0 }, chose: { people: 0 }, rate: null, signups: 0, byBook: [] });
+    expect(stats.signupsBySource.every((s) => s.count === 0)).toBe(true);
     expect(stats.byPlan.map((p) => p.people)).toEqual([0, 0, 0]);
   });
 

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Database } from "../db";
 import { paywallEvents } from "../db/schema";
 import type { EntitlementKind } from "./access";
+import { SIGNUP_SOURCES, type SignupSource } from "./signup-source";
 
 // Numbers for /admin/paywall (docs/paywall-plan.md, "Наблюдаемость").
 //
@@ -15,6 +16,8 @@ export type PaywallStats = {
   /** chose.people / shown.people; null when nobody saw the paywall. */
   rate: number | null;
   signups: number;
+  /** Sign-ups by where the guest pressed the button; "unknown" when it got lost. */
+  signupsBySource: { source: SignupSource | "unknown"; count: number }[];
   byPlan: { plan: EntitlementKind; people: number }[];
   byBook: { slug: string; shown: number; chose: number; rate: number | null }[];
 };
@@ -26,7 +29,7 @@ const rate = (chose: number, shown: number) => (shown > 0 ? chose / shown : null
 
 export async function loadPaywallStats(db: Database, since: Date): Promise<PaywallStats> {
   const after = sql`${paywallEvents.createdAt} >= ${since.toISOString()}`;
-  const [totals, plans, books] = await Promise.all([
+  const [totals, plans, books, sources] = await Promise.all([
     db.execute<{ kind: string; events: number; people: number }>(sql`
       select ${kind} as kind, count(*)::int as events, count(distinct ${person})::int as people
       from ${paywallEvents} where ${after} group by 1`),
@@ -40,7 +43,12 @@ export async function loadPaywallStats(db: Database, since: Date): Promise<Paywa
       from ${paywallEvents}
       where ${after} and ${paywallEvents.slug} is not null and ${paywallEvents.type} <> 'signup'
       group by 1, 2`),
+    db.execute<{ source: string | null; count: number }>(sql`
+      select ${paywallEvents.source} as source, count(*)::int as count
+      from ${paywallEvents} where ${after} and ${paywallEvents.type} = 'signup' group by 1`),
   ]);
+  const sourceCount = (source: string | null) =>
+    sources.rows.filter((row) => (source === null ? !SIGNUP_SOURCES.includes(row.source as SignupSource) : row.source === source)).reduce((sum, row) => sum + row.count, 0);
 
   const total = (k: string) => totals.rows.find((row) => row.kind === k) ?? { events: 0, people: 0 };
   const shown = total("paywall_shown");
@@ -59,6 +67,10 @@ export async function loadPaywallStats(db: Database, since: Date): Promise<Paywa
     chose: { people: chose.people, events: chose.events },
     rate: rate(chose.people, shown.people),
     signups: total("signup").events,
+    signupsBySource: [
+      ...SIGNUP_SOURCES.map((source) => ({ source, count: sourceCount(source) })),
+      { source: "unknown" as const, count: sourceCount(null) },
+    ],
     byPlan: PLANS.map((plan) => ({ plan, people: plans.rows.find((row) => row.plan === plan)?.people ?? 0 })),
     byBook: [...bySlug.entries()]
       .map(([slug, n]) => ({ slug, ...n, rate: rate(n.chose, n.shown) }))

@@ -28,7 +28,8 @@ const canRead = async (at: Date) =>
   canReadChapter({
     paywall: { freeChapters: 6, priceTenge: 490 },
     work: WORK,
-    chapter: 7,
+    // Chapter 7 is the sign-up gift; 8 is the first paid one.
+    chapter: 8,
     reader: { userId: "u1", entitlements: await loadEntitlements(db, "u1") },
     now: at,
   });

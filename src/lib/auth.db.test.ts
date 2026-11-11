@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Database } from "../db";
 import { account, paywallEvents, user } from "../db/schema";
 import { createTestDb, resetDb } from "../db/test-db";
-import { AUTH_ATTEMPTS_PER_MINUTE, createAuth, type Auth } from "./auth";
+import { AUTH_ATTEMPTS_PER_MINUTE, claimUnverifiedAccount, createAuth, type Auth } from "./auth";
 
 // Sign-up and sign-in through Better Auth's real HTTP handler, against alau_test.
 
@@ -212,5 +212,34 @@ describe("email confirmation", () => {
     const [row] = await db.select().from(user).where(eq(user.email, "confirm@example.kz"));
     expect(row.emailVerified).toBe(true);
     expect((await call("/sign-in/email", { email: "confirm@example.kz", password: "long-password-1" })).status).toBe(200);
+  });
+});
+
+describe("claimUnverifiedAccount (Google sign-in onto an existing email)", () => {
+  const credentialsOf = async (userId: string) =>
+    db.select().from(account).where(eq(account.userId, userId));
+
+  it("removes the password of an unconfirmed account and confirms the email", async () => {
+    await signUp("squatter@example.kz", "someone-elses-password");
+    const [row] = await db.select().from(user).where(eq(user.email, "squatter@example.kz"));
+    expect(row.emailVerified).toBe(false);
+
+    await claimUnverifiedAccount(db, row.id);
+
+    const [after] = await db.select().from(user).where(eq(user.id, row.id));
+    expect(after.emailVerified).toBe(true);
+    expect(await credentialsOf(row.id)).toHaveLength(0);
+    expect((await signIn("squatter@example.kz", "someone-elses-password")).status).toBe(401);
+  });
+
+  it("leaves a confirmed account and its password alone", async () => {
+    await signUp("owner@example.kz", "my-own-password-1");
+    const [row] = await db.select().from(user).where(eq(user.email, "owner@example.kz"));
+    await db.update(user).set({ emailVerified: true }).where(eq(user.id, row.id));
+
+    await claimUnverifiedAccount(db, row.id);
+
+    expect(await credentialsOf(row.id)).toHaveLength(1);
+    expect((await signIn("owner@example.kz", "my-own-password-1")).status).toBe(200);
   });
 });

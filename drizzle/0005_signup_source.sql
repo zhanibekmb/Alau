@@ -1,0 +1,1 @@
+ALTER TABLE "paywall_events" ADD COLUMN "source" text;

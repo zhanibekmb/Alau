@@ -150,7 +150,7 @@ export function SubscriptionCard() {
             Тегін тариф
           </h2>
           <p className="mt-2 text-sm text-white/70">
-            Әр кітаптың кульминацияға дейінгі бөлімі ашық. Толық оқу үшін соңғы тегін тараудан кейін тариф таңдаңыз.
+            Әр кітаптың кульминацияға дейінгі бөлімі ашық, аккаунтпен тағы бір тарау сыйлық. Толық оқу үшін одан кейін тариф таңдаңыз.
           </p>
           <div className="mt-auto flex items-end justify-between gap-3 pt-4">
             {!signedIn ? (
@@ -191,12 +191,10 @@ function PremiumInfo({ item, now }: { item: EntitlementView; now: Date }) {
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        {item.demo || item.manual ? (
-          <span
-            className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70"
-            title={item.demo ? "Демо режим: нақты төлем болған жоқ" : "Әкімші қолмен берген"}
-          >
-            {item.demo ? "демо" : "қолмен берілді"}
+        {/* A manual grant looks like any paid plan to the reader; only /admin shows where it came from. */}
+        {item.demo ? (
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70" title="Демо режим: нақты төлем болған жоқ">
+            демо
           </span>
         ) : (
           <span />

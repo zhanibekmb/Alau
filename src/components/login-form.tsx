@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-messages";
 import { showToast } from "@/lib/toast";
 import { Mascot } from "./brand";
+import { CheckIcon, GoogleIcon } from "./icons";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -32,12 +33,30 @@ const TEXT: Record<Mode, { title: string; lead: string; submit: string; busy: st
 /** Where the confirmation link returns the reader: the same page, with a welcome notice. */
 const withVerified = (path: string) => `${path}${path.includes("?") ? "&" : "?"}verified=1`;
 
-export function LoginForm({ next, initialMode = "sign-in" }: { next: string; initialMode?: Mode }) {
+/** What a guest gets by signing up: shown on the sign-up form, where the decision is made. */
+const SIGN_UP_PERKS = [
+  "Сөздік пен прогресс телефонда да, компьютерде де бірдей",
+  "Браузер тазаланса да ештеңе жоғалмайды",
+  "Күнделікті серия мен сөз қайталау есте қалады",
+];
+
+export function LoginForm({
+  next,
+  initialMode = "sign-in",
+  googleEnabled = false,
+  initialError = null,
+}: {
+  next: string;
+  initialMode?: Mode;
+  googleEnabled?: boolean;
+  /** Set when Google sends the reader back with an error. */
+  initialError?: string | null;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [busy, setBusy] = useState(false);
   /** Set after sign-up (or a sign-in with an unconfirmed email): the "check your inbox" screen. */
   const [awaiting, setAwaiting] = useState<string | null>(null);
@@ -67,6 +86,27 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
     setBusy(false);
     if (authError) setError(authErrorMessage(authError));
     else setResent(true);
+  };
+
+  /** Leaves for Google's account picker; Google sends the reader back to `next`, signed in. */
+  const signInWithGoogle = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { error: authError } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: next,
+        errorCallbackURL: `/login?next=${encodeURIComponent(next)}&error=google`,
+      });
+      if (authError) {
+        setError(authErrorMessage(authError));
+        setBusy(false);
+      }
+    } catch {
+      setError("Байланыс жоқ. Интернетті тексеріп, қайталаңыз.");
+      setBusy(false);
+    }
   };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -156,7 +196,39 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
       <h1 className="mt-4 text-3xl font-bold">{text.title}</h1>
       <p className="mt-1 text-muted">{text.lead}</p>
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      {mode === "sign-up" && (
+        <ul className="mt-4 flex flex-col gap-2 text-sm">
+          {SIGN_UP_PERKS.map((perk) => (
+            <li key={perk} className="flex items-start gap-2">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <CheckIcon className="size-3.5" strokeWidth={2.5} />
+              </span>
+              {perk}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {googleEnabled && (
+        <>
+          <button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={busy}
+            className="mt-6 flex h-12 items-center justify-center gap-3 rounded-2xl border border-line bg-white font-medium transition-colors hover:bg-sidebar disabled:opacity-60"
+          >
+            <GoogleIcon className="size-5" />
+            Google арқылы {mode === "sign-up" ? "тіркелу" : "кіру"}
+          </button>
+          <div className="mt-5 flex items-center gap-3 text-sm text-muted" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            немесе email арқылы
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      )}
+
+      <form onSubmit={onSubmit} className={`${googleEnabled ? "mt-5" : "mt-6"} flex flex-col gap-4`}>
         <label className="block">
           <span className="text-sm font-medium">Email</span>
           <input
@@ -202,7 +274,7 @@ export function LoginForm({ next, initialMode = "sign-in" }: { next: string; ini
 
         {mode === "sign-up" && (
           <p className="text-center text-xs leading-relaxed text-muted">
-            «Аккаунт ашу» батырмасын басу арқылы сіз{" "}
+            Тіркелу арқылы сіз{" "}
             <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-ink">
               Пайдалану шарттарымен
             </Link>{" "}

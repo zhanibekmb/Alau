@@ -56,7 +56,8 @@ describe("loadEntitlements", () => {
       canReadChapter({
         paywall: { freeChapters: 6, priceTenge: 490 },
         work: "secret-of-lake-bakaly",
-        chapter: 7,
+        // Chapter 7 is the sign-up gift; 8 is the first paid one.
+        chapter: 8,
         reader: { userId: "u2", entitlements: rows },
         now: new Date(now),
       });

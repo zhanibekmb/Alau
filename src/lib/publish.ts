@@ -9,6 +9,7 @@ import type {
   SourceBook,
   Token,
 } from "./types";
+import { GIFT_CHAPTERS } from "./access";
 
 /** Words that never open a translation, so they do not need one. */
 const NO_GLOSS = new Set(["a", "an", "the", "to", "of"]);
@@ -174,9 +175,11 @@ function checkPaywall(source: SourceBook): void {
   if (!source.work.trim()) throw new InvalidPaywallError(`${slug}: work is empty`);
   if (!paywall) return;
   const { freeChapters, priceTenge } = paywall;
-  if (!Number.isInteger(freeChapters) || freeChapters < 1 || freeChapters >= chapters.length) {
+  // After the free part and the sign-up gift (GIFT_CHAPTERS), at least one chapter must stay paid.
+  const maxFree = chapters.length - 1 - GIFT_CHAPTERS;
+  if (!Number.isInteger(freeChapters) || freeChapters < 1 || freeChapters > maxFree) {
     throw new InvalidPaywallError(
-      `${slug}: freeChapters must leave at least one free and one paid chapter (1..${chapters.length - 1}), got ${freeChapters}`,
+      `${slug}: freeChapters must leave at least one free chapter, ${GIFT_CHAPTERS} gift chapter(s) for an account and one paid chapter (1..${maxFree}), got ${freeChapters}`,
     );
   }
   if (!Number.isInteger(priceTenge) || priceTenge <= 0) {

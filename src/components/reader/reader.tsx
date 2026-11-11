@@ -14,10 +14,15 @@ import { addReadingTime, recordProgress, saveWord, updateSettings, useAppState, 
 import type { BookInfo, ChapterFile, Gloss, Page } from "@/lib/types";
 import { Mascot } from "../brand";
 import { ArrowLeftIcon, ArrowRightIcon, CaretIcon, CloseIcon, DictionaryIcon, MenuIcon } from "../icons";
+import { lastAccountChapter } from "@/lib/access";
 import { viewUnlocksWork } from "@/lib/entitlement-view";
 import { useEntitlements } from "@/lib/use-entitlements";
+import { nudgeAfterSave, signUpHref } from "@/lib/guest-nudge";
+import { showToast } from "@/lib/toast";
 import { ChapterMenu, OriginalPanel, SettingsPanel } from "./panels";
+import { ChapterEnd, chapterEndDue, markChapterEndShown } from "./chapter-end";
 import { Paywall } from "./paywall";
+import { useGuestStreakNudge } from "../guest-nudge";
 import { WordPopover, placePopover, type PopoverPlace } from "./word-popover";
 
 const FONT_FAMILY = { serif: "var(--ff-pt-serif)", sans: "var(--ff-inter)", lora: "var(--ff-lora)" };
@@ -141,13 +146,24 @@ const PageText = memo(function PageText({
   );
 });
 
-export function Reader({ book, startPage }: { book: BookInfo; startPage?: number }) {
+export function Reader({
+  book,
+  startPage,
+  googleEnabled = false,
+}: {
+  book: BookInfo;
+  startPage?: number;
+  /** Google sign-in keys are set (server side), so sign-up buttons can go straight to Google. */
+  googleEnabled?: boolean;
+}) {
   const { progress, words, settings } = useAppState();
   const hydrated = useHydrated();
   const stored = progress[book.slug];
 
   const [chosenPage, setChosenPage] = useState<number | null>(startPage ?? null);
   const [showFinish, setShowFinish] = useState(false);
+  /** A guest has just finished this chapter: the "Тарау аяқталды!" screen (chapter-end.tsx). */
+  const [chapterEnd, setChapterEnd] = useState<number | null>(null);
   const [panel, setPanel] = useState<"chapters" | "settings" | "original" | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
 
@@ -158,10 +174,13 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
     page === null ? null : (book.chapters.find((c) => page >= c.firstPage && page <= c.lastPage) ?? book.chapters[0]);
 
   const { status, file, retry } = useChapter(book.slug, chapterInfo?.n ?? null);
-  const { entitlements, reload: reloadEntitlements } = useEntitlements();
+  const { entitlements, reload: reloadEntitlements, signedIn, sessionPending } = useEntitlements();
   const ownsWork = viewUnlocksWork(entitlements, book.work, new Date());
-  /** Lock icons in the menu only; the server decides real access. */
-  const isLocked = (n: number) => Boolean(book.paywall) && n > (book.paywall?.freeChapters ?? 0) && !ownsWork;
+  /** Lock icons in the menu only; the server decides real access. An account also opens the gift chapter. */
+  const isLocked = (n: number) =>
+    Boolean(book.paywall) && !ownsWork && n > (signedIn ? lastAccountChapter(book.paywall) : (book.paywall?.freeChapters ?? 0));
+  /** The last chapter whose end shows a guest "Тарау аяқталды!"; after it comes the gift paywall. */
+  const lastChapterEnd = book.paywall ? book.paywall.freeChapters - 1 : book.chapters.length - 1;
   const pageData = file?.pages.find((p) => p.number === page);
   const isReady = status === "ready" && Boolean(pageData);
 
@@ -171,7 +190,8 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
     }
   }, [book.slug, book.totalPages, page, isReady]);
 
-  useReadingTimer(isReady && !showFinish);
+  useReadingTimer(isReady && !showFinish && chapterEnd === null);
+  useGuestStreakNudge();
 
   const savedIds = new Set(Object.keys(words));
   const bookWordCount = Object.values(words).filter((w) => w.slug === book.slug).length;
@@ -220,12 +240,29 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
 
   const goTo = (next: number) => {
     setSelection(null);
+    setChapterEnd(null);
     setChosenPage(next);
     window.scrollTo({ top: 0 });
   };
 
   const onNext = () => {
     if (page === null) return;
+    // Only a forward turn from a chapter's last page; menu jumps, going back and resuming never show it.
+    const finished = chapterInfo && page === chapterInfo.lastPage ? chapterInfo.n : null;
+    if (
+      finished !== null &&
+      finished <= lastChapterEnd &&
+      hydrated &&
+      !signedIn &&
+      !sessionPending &&
+      chapterEndDue(book.slug, finished)
+    ) {
+      markChapterEndShown(book.slug, finished);
+      setSelection(null);
+      setChapterEnd(finished);
+      window.scrollTo({ top: 0 });
+      return;
+    }
     if (page < book.totalPages) {
       goTo(page + 1);
     } else {
@@ -288,8 +325,12 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         </div>
       </header>
 
-      <main className={`mx-auto flex w-full max-w-[680px] flex-1 flex-col px-5 pt-5 md:px-4 md:pt-10 ${isReady && !showFinish ? "" : "pb-10"}`}>
-        {showFinish ? (
+      <main
+        className={`mx-auto flex w-full max-w-[680px] flex-1 flex-col px-5 pt-5 md:px-4 md:pt-10 ${isReady && !showFinish && chapterEnd === null ? "" : "pb-10"}`}
+      >
+        {chapterEnd !== null ? (
+          <ChapterEnd book={book} chapter={chapterEnd} googleEnabled={googleEnabled} onNext={() => page !== null && goTo(page + 1)} />
+        ) : showFinish ? (
           <FinishScreen
             book={book}
             wordCount={bookWordCount}
@@ -303,6 +344,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
             book={book}
             chapter={chapterInfo?.n ?? 1}
             needsLogin={status === "login"}
+            googleEnabled={googleEnabled}
             onUnlocked={() => {
               reloadEntitlements();
               retry();
@@ -376,7 +418,7 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
         )}
       </main>
 
-      {isReady && !showFinish && (
+      {isReady && !showFinish && chapterEnd === null && (
         <>
           <Mascot pose="audio-book" className="pointer-events-none fixed bottom-6 left-8 hidden size-24 xl:block" />
           {hydrated && !settings.hintSeen && (
@@ -408,6 +450,18 @@ export function Reader({ book, startPage }: { book: BookInfo; startPage?: number
               sentence: selection.sentence,
               savedAt: Date.now(),
             });
+            // Guests keep words only in this browser: say so on the first word and now and then after.
+            const count = savedIds.size + (savedIds.has(selection.gloss.id) ? 0 : 1);
+            if (!signedIn && !sessionPending && !savedIds.has(selection.gloss.id) && nudgeAfterSave(count)) {
+              showToast(
+                count === 1
+                  ? "Сөз сақталды, бірақ тек осы браузерде. Тіркелсеңіз, жоғалмайды."
+                  : `Сөздікте ${count} сөз. Тіркеліп, оларды кез келген құрылғыда сақтаңыз.`,
+                "success",
+                7000,
+                { label: "Тіркелу", href: signUpHref(window.location.pathname + window.location.search) },
+              );
+            }
           }}
         />
       )}

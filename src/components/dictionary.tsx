@@ -7,10 +7,13 @@ import { speak } from "@/lib/speak";
 import type { SavedWord } from "@/lib/state";
 import { removeWord, useAppState, useHydrated } from "@/lib/store";
 import { POS_LABELS, type BookInfo } from "@/lib/types";
+import { signUpHref } from "@/lib/guest-nudge";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useNow } from "@/lib/use-now";
 import { BookCover } from "./book-card";
+import { GuestSignUpCard } from "./guest-nudge";
 import { Mascot } from "./brand";
-import { ArrowRightIcon, CardsIcon, CloseIcon, FolderIcon, PageIcon, SearchIcon, SortIcon, SpeakerIcon, WordsIcon } from "./icons";
+import { ArrowRightIcon, CardsIcon, CloseIcon, FolderIcon, LockIcon, PageIcon, SearchIcon, SortIcon, SpeakerIcon, WordsIcon } from "./icons";
 import { WordReview } from "./word-review";
 
 // Dictionary from the Figma Desktop screens (MyWords-all-words, MyWords-book-words).
@@ -28,6 +31,7 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
   const { words, reviews } = useAppState();
   const hydrated = useHydrated();
   const now = useNow();
+  const { signedIn, sessionPending } = useEntitlements();
   const [session, setSession] = useState<string[] | null>(null);
   const [view, setView] = useState<"all" | "book">("all");
   const [query, setQuery] = useState("");
@@ -73,7 +77,23 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
     <div className="mx-auto w-full max-w-[913px] px-5 pb-10 pt-6 md:px-8 md:pt-14">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold md:text-4xl">Сөздік</h1>
-        {all.length > 0 && (
+        {all.length > 0 && !signedIn && !sessionPending && (
+          // Review is an account feature: a guest sees how many words wait, and the way to them.
+          <Link
+            href={signUpHref("/dictionary")}
+            title="Сөздерді қайталау үшін тегін аккаунт ашыңыз"
+            className="flex h-12 items-center gap-2.5 rounded-2xl bg-accent px-4 text-lg font-medium text-white shadow-md shadow-accent/30 transition-transform active:scale-[0.98]"
+          >
+            <LockIcon className="size-5" />
+            Сөздерді қайталау
+            {due > 0 && (
+              <span className="flex min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-sm font-semibold text-amber-700">
+                {due}
+              </span>
+            )}
+          </Link>
+        )}
+        {all.length > 0 && signedIn && (
           <button
             type="button"
             onClick={() => setSession(dueWords(words, reviews, Date.now()).slice(0, SESSION_SIZE).map((w) => w.id))}
@@ -91,6 +111,7 @@ export function Dictionary({ books: catalog }: { books: BookInfo[] }) {
           </button>
         )}
       </header>
+      <GuestSignUpCard className="mt-5" />
       {session && <WordReview initialQueue={session} onClose={() => setSession(null)} />}
 
       {!hydrated ? (

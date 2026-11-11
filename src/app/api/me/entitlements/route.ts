@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { getDb } from "@/db";
 import { findPaidWork } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/dal";
@@ -9,6 +10,8 @@ import { listReaderEntitlements } from "@/lib/entitlements";
 // 200 { entitlements } · 401 not signed in · 503 database down
 
 export async function GET() {
+  // Per reader, never prerendered at build time (it reads the session cookie).
+  await connection();
   try {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "sign in first" }, { status: 401, headers: { "Cache-Control": "no-store" } });

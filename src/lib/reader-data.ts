@@ -101,6 +101,14 @@ export async function syncReaderData(db: Database, userId: string, request: Sync
         .set({ userId })
         .where(and(eq(paywallEvents.anonId, request.anonId), isNull(paywallEvents.userId)));
     }
+
+    // Only fills an empty source, so a later sign-in on another device cannot rewrite it.
+    if (request.signupSource) {
+      await tx
+        .update(paywallEvents)
+        .set({ source: request.signupSource })
+        .where(and(eq(paywallEvents.userId, userId), eq(paywallEvents.type, "signup"), isNull(paywallEvents.source)));
+    }
   });
 
   return request.pull ? loadReaderData(db, userId) : null;

@@ -19,7 +19,12 @@ const progress = (page: number, updatedAt = 1000, finished = false) => ({ page, 
 
 describe("parseSyncRequest", () => {
   it("accepts an empty queue", () => {
-    expect(parseSyncRequest({ ops: [] })).toEqual({ ok: true, value: { ops: [], anonId: null, pull: false }, dropped: 0 });
+    expect(parseSyncRequest({ ops: [] })).toEqual({ ok: true, value: { ops: [], anonId: null, signupSource: null, pull: false }, dropped: 0 });
+  });
+
+  it("keeps a known sign-up source and ignores an unknown one", () => {
+    expect(parseSyncRequest({ ops: [], signupSource: "chapter_end" })).toMatchObject({ ok: true, value: { signupSource: "chapter_end" } });
+    expect(parseSyncRequest({ ops: [], signupSource: "evil" })).toMatchObject({ ok: true, value: { signupSource: null } });
   });
 
   it("refuses a body that is not a queue", () => {
