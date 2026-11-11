@@ -135,9 +135,8 @@ function Hero() {
           Ағылшынша <ChangingWord words={["оқы", "түсін", "сөйле", "ойла"]} />
           <br className="hidden md:block" /> қазақ кітаптары арқылы
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg font-medium text-[#201f4b]/80 md:text-xl">
-          Қазақ авторларының шығармалары ағылшын тілінде, A1-ден B2-ге дейін. Таныс емес сөзді бассаңыз — аудармасы бірден
-          шығады.
+        <p className="mx-auto mt-6 max-w-2xl text-lg font-medium text-[#201f4b]/80 md:text-xl">
+          Қазақ авторларының шығармалары ағылшынша, A1-ден B2-ге дейін.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3">
           <Link
@@ -160,20 +159,19 @@ function Hero() {
  * tap a word, keep it, review it. A row on wide screens, a swipeable strip on a phone.
  */
 function Phones() {
-  const steps: { shot: PhoneShot; title: string; text: string }[] = [
-    { shot: "reader", title: "Сөзді басыңыз", text: "Аудармасы мен айтылуы бірден шығады" },
-    { shot: "dictionary", title: "Сөздікке сақтаңыз", text: "Жаңа сөздер жеке сөздігіңізде жиналады" },
-    { shot: "review", title: "Қайталап, есте сақтаңыз", text: "Карточкалар ұмыта бастаған сөзді еске салады" },
+  const steps: { shot: PhoneShot; title: string }[] = [
+    { shot: "reader", title: "Сөзді басыңыз" },
+    { shot: "dictionary", title: "Сөздікке сақтаңыз" },
+    { shot: "review", title: "Қайталаңыз" },
   ];
   return (
-    <ol className="-mx-5 mt-12 flex snap-x snap-mandatory items-start gap-6 overflow-x-auto px-5 pb-28 text-left [scrollbar-width:none] md:mx-0 md:mt-16 md:justify-center md:gap-8 md:overflow-visible md:px-0 md:pb-32 lg:gap-12">
+    <ol className="-mx-5 mt-12 flex snap-x snap-mandatory items-start gap-8 overflow-x-auto px-5 pb-28 text-left [scrollbar-width:none] md:mx-0 md:mt-16 md:justify-center md:gap-10 md:overflow-visible md:px-0 md:pb-32 lg:gap-20 xl:gap-24">
       {steps.map((step, i) => (
         <li key={step.shot} className="flex w-[calc(414px*var(--s))] shrink-0 snap-center flex-col [--s:0.64] max-md:first:ml-auto max-md:last:mr-auto md:[--s:0.5] lg:[--s:0.62] xl:[--s:0.68]">
-          <p className="flex items-center gap-2.5 font-display text-lg font-extrabold leading-tight md:max-lg:min-h-11">
+          <p className="flex items-center justify-center gap-2.5 font-display text-lg font-extrabold leading-tight">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#201f4b] text-base text-[#ffc24b]">{i + 1}</span>
             {step.title}
           </p>
-          <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-[#201f4b]/75">{step.text}</p>
           <Phone shot={step.shot} priority={i === 0} className="mt-5" />
         </li>
       ))}
